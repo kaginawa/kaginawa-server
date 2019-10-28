@@ -1,0 +1,14 @@
+{
+  "name": "Kaginawa Server",
+  "description": "Remote maintenance and data collection software, server program",
+  "repository": "https://github.com/mikan/kaginawa-server",
+  "logo": "https://github.com/golang.png",
+  "addons": [
+    {
+      "plan": "scheduler:standard"
+    },
+    {
+      "plan": "mongolab:sandbox"
+    }
+  ]
+}

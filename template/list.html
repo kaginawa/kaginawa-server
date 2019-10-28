@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Kaginawa Server</title>
+    <link rel="stylesheet" href="/assets/kaginawa.css?v={{.Version}}"/>
+</head>
+<body>
+<h1>Kaginawa Server</h1>
+<button onclick="document.location='/admin'">Admin</button>
+{{if .Reports}}
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Custom ID</th>
+            <th>Hostname</th>
+            <th>Received Time</th>
+            <th>Connected Server</th>
+            <th>Device Boot Time</th>
+            <th>Global IP</th>
+            <th>Local IPv4</th>
+            <th>Seq</th>
+            <th>Version</th>
+            <th>Errors</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{range .Reports}}
+            <tr>
+                <td>{{.ID}}</td>
+                <td>{{.CustomID}}</td>
+                <td>{{.Hostname}}</td>
+                <td>{{time .ServerTime "2006/1/2 15:04:05"}}</td>
+                <td>{{.SSHServerHost}} {{.SSHRemotePort}}</td>
+                <td>{{time .BootTime "2006/1/2 15:04:05"}}</td>
+                <td>{{if .GlobalHost}}{{.GlobalHost}}{{else}}{{.GlobalIP}}{{end}}</td>
+                <td>{{.LocalIPv4}}</td>
+                <td>{{.Sequence}}</td>
+                <td>{{.AgentVersion}}</td>
+                <td>
+                    {{range .Errors}}
+                        {{.}}<br/>
+                    {{end}}
+                </td>
+            </tr>
+        {{end}}
+        </tbody>
+    </table>
+{{else}}
+    <p>WARNING: No reports found.</p>
+{{end}}
+<hr/>
+<address>Kaginawa Server {{.Version}}</address>
+</body>
+</html>

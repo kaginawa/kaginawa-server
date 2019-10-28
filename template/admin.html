@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Kaginawa Server</title>
+    <link rel="stylesheet" href="/assets/kaginawa.css?v={{.Version}}"/>
+</head>
+<body>
+<h1>Kaginawa Server</h1>
+<button onclick="document.location='/list'">List</button>
+<h2>API Keys</h2>
+{{if .APIKeys}}
+    <table>
+        <thead>
+        <tr>
+            <th>API Key</th>
+            <th>Label</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{range .APIKeys}}
+            <tr>
+                <td>{{.Key}}</td>
+                <td>{{.Label}}</td>
+            </tr>
+        {{end}}
+        </tbody>
+    </table>
+{{else}}
+    <p>WARNING: No api keys registered.</p>
+{{end}}
+<form method="post" action="/new-key">
+    <div>
+        <label for="input-key">Key</label>
+        <input type="text" id="input-key" name="key"/>
+    </div>
+    <div>
+        <label for="input-label">Label</label>
+        <input type="text" id="input-label" name="label"/>
+    </div>
+    <div>
+        <input type="submit"/>
+    </div>
+</form>
+<h2>SSH Servers</h2>
+{{if .SSHServers}}
+    <table>
+        <thead>
+        <tr>
+            <th>Host</th>
+            <th>Port</th>
+            <th>User</th>
+            <th>Key</th>
+            <th>Password</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{range .SSHServers}}
+            <tr>
+                <td>{{.Host}}</td>
+                <td>{{.Port}}</td>
+                <td>{{.User}}</td>
+                <td class="center">{{if .Key}}✔{{end}}</td>
+                <td class="center">{{if .Password}}✔{{end}}</td>
+            </tr>
+        {{end}}
+        </tbody>
+    </table>
+{{else}}
+    <p>WARNING: No ssh servers registered.</p>
+{{end}}
+<form method="post" action="/new-server">
+    <div>
+        <label for="input-host">Host</label>
+        <input type="text" id="input-host" name="host"/>
+    </div>
+    <div>
+        <label for="input-port">Port</label>
+        <input type="number" min="1" max="65535" id="input-port" name="port" value="22"/>
+    </div>
+    <div>
+        <label for="input-user">User</label>
+        <input type="text" id="input-user" name="user"/>
+    </div>
+    <div>
+        <label for="input-key">Key</label>
+        <textarea id="input-key" name="key"></textarea>
+    </div>
+    <div>
+        <label for="input-password">Password</label>
+        <input type="password" id="input-password" name="password"/>
+    </div>
+    <input type="submit"/>
+    Either key or password is required.
+</form>
+<hr/>
+<address>Kaginawa Server {{.Version}}</address>
+</body>
+</html>
