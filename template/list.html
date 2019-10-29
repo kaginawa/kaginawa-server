@@ -17,30 +17,30 @@
             <th>Hostname</th>
             <th>Received Time</th>
             <th>Connected Server</th>
-            <th>Device Boot Time</th>
             <th>Global IP</th>
             <th>Local IPv4</th>
             <th>Seq</th>
             <th>Version</th>
-            <th>Errors</th>
+            <th>Result</th>
         </tr>
         </thead>
         <tbody>
         {{range .Reports}}
             <tr>
-                <td>{{.ID}}</td>
+                <td><a href="/node/{{.ID}}">{{.ID}}</a></td>
                 <td>{{.CustomID}}</td>
                 <td>{{.Hostname}}</td>
                 <td>{{time .ServerTime "2006/1/2 15:04:05"}}</td>
                 <td>{{.SSHServerHost}} {{.SSHRemotePort}}</td>
-                <td>{{time .BootTime "2006/1/2 15:04:05"}}</td>
                 <td>{{if .GlobalHost}}{{.GlobalHost}}{{else}}{{.GlobalIP}}{{end}}</td>
                 <td>{{.LocalIPv4}}</td>
                 <td>{{.Sequence}}</td>
                 <td>{{.AgentVersion}}</td>
                 <td>
-                    {{range .Errors}}
-                        {{.}}<br/>
+                    {{if .Errors}}
+                        <span style="color: red">{{len .Errors}} errors</span>
+                    {{else}}
+                        <span style="color: green">OK</span>
                     {{end}}
                 </td>
             </tr>

@@ -176,3 +176,27 @@ func (db *db) listReports() ([]report, error) {
 	}
 	return reports, nil
 }
+
+func (db *db) getReportByID(id string) (*report, error) {
+	result := db.instance.Collection(nodeCollection).FindOne(context.Background(), bson.M{"id": id})
+	if result.Err() != nil {
+		return nil, result.Err()
+	}
+	var report report
+	if err := result.Decode(&report); err != nil {
+		return nil, err
+	}
+	return &report, nil
+}
+
+func (db *db) getReportByCustomID(customID string) (*report, error) {
+	result := db.instance.Collection(nodeCollection).FindOne(context.Background(), bson.M{"custom_id": customID})
+	if result.Err() != nil {
+		return nil, result.Err()
+	}
+	var report report
+	if err := result.Decode(&report); err != nil {
+		return nil, err
+	}
+	return &report, nil
+}

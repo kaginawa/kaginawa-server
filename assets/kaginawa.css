@@ -15,6 +15,15 @@ td {
     padding: 3px;
 }
 
+code {
+    background-color: whitesmoke;
+    padding: 3px;
+}
+
+pre {
+    color: darkgreen;
+}
+
 .center {
     text-align: center;
 }

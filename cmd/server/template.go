@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/gorilla/mux"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -126,10 +127,23 @@ func handleNode(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
+	id := mux.Vars(r)["id"]
+	if len(id) == 0 {
+		http.NotFound(w, r)
+		return
+	}
+	rep, err := database.getReportByID(id)
+	if err != nil {
+		log.Printf("failed to get report (id=%s): %v", id, err)
+		http.Error(w, "Database unavailable", http.StatusInternalServerError)
+		return
+	}
 	execTemplate(w, "node", struct {
 		Version string
+		Report  report
 	}{
 		kaginawa.Version(),
+		*rep,
 	})
 }
 
