@@ -16,6 +16,7 @@ const (
 	keyCollection    = "keys"
 	serverCollection = "servers"
 	nodeCollection   = "nodes"
+	logCollection    = "logs"
 )
 
 var (
@@ -151,6 +152,9 @@ func (db *db) putReport(report report) error {
 	}
 	key := bson.M{"id": report.ID}
 	if _, err = db.instance.Collection(nodeCollection).ReplaceOne(context.Background(), key, raw, upsert); err != nil {
+		return err
+	}
+	if _, err = db.instance.Collection(logCollection).InsertOne(context.Background(), raw); err != nil {
 		return err
 	}
 	return nil
