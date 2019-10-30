@@ -38,7 +38,9 @@
                 <td>{{.AgentVersion}}</td>
                 <td>
                     {{if .Errors}}
-                        <span style="color: red">{{len .Errors}} errors</span>
+                        <span style="color: red">
+                            {{if eq (len .Report.Errors) 1}}1 error{{else}}{{len .Report.Errors}} errors{{end}}
+                        </span>
                     {{else}}
                         <span style="color: green">OK</span>
                     {{end}}

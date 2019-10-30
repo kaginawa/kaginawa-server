@@ -26,13 +26,28 @@
     </tr>
     <tr>
         <th>SSH Status</th>
-        <td>{{if ne .Report.SSHRemotePort 0}}<span
-                    style="color: green">Connected</span>{{else}}Not connected or disabled{{end}}</td>
+        <td>
+            {{if ne .Report.SSHRemotePort 0}}
+                <span style="color: green">Connected</span>
+            {{else}}
+                Not connected or disabled
+            {{end}}
+        </td>
     </tr>
     {{if ne .Report.SSHRemotePort 0}}
         <tr>
             <th>SSH Server : Listen Port</th>
             <td>{{.Report.SSHServerHost}}:{{.Report.SSHRemotePort}}</td>
+        </tr>
+    {{end}}
+    {{if .Report.PingTarget}}
+        <tr>
+            <th>Ping Latency</th>
+            <td>{{.Report.PingMills}}</td>
+        </tr>
+        <tr>
+            <th>Ping Target</th>
+            <td>{{.Report.PingTarget}}</td>
         </tr>
     {{end}}
     <tr>
@@ -43,7 +58,9 @@
         <th>Result</th>
         <td>
             {{if .Report.Errors}}
-                <span style="color: red">{{len .Report.Errors}} errors</span>
+                <span style="color: red">
+                    {{if eq (len .Report.Errors) 1}}1 error{{else}}{{len .Report.Errors}} errors{{end}}
+                </span>
             {{else}}
                 <span style="color: green">OK</span>
             {{end}}

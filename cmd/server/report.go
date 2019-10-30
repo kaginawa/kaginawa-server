@@ -30,6 +30,8 @@ type report struct {
 	LocalIPv4      string   `json:"ip4_local" bson:"ip4_local"`               // Local IPv6 address
 	LocalIPv6      string   `json:"ip6_local" bson:"ip6_local"`               // Local IPv6 address
 	Hostname       string   `json:"hostname" bson:"hostname"`                 // OS Hostname
+	PingMills      float64  `json:"ping_ms" bson:"ping_ms"`                   // Ping latency milliseconds
+	PingTarget     string   `json:"ping_target" bson:"ping_target"`           // Ping target for result
 	Errors         []string `json:"errors" bson:"errors"`                     // List of errors
 	Payload        string   `json:"payload" bson:"payload"`                   // Custom content provided by payload command
 	PayloadCmd     string   `json:"payload_cmd" bson:"payload_cmd"`           // Executed payload command
