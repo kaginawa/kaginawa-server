@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/mikan/kaginawa-server"
+	"github.com/kaginawa/kaginawa-server"
 )
 
 const (

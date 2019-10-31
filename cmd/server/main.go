@@ -6,17 +6,13 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/mikan/kaginawa-server"
+	"github.com/kaginawa/kaginawa-server"
 	"golang.org/x/crypto/sha3"
 )
 
-const (
-	defaultPort   = "8080"
-	defaultLogTTL = 24 * 30 * time.Hour // 30 days
-)
+const defaultPort = "8080"
 
 var (
 	database   *db
