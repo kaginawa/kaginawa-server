@@ -60,6 +60,7 @@ func main() {
 
 	r := mux.NewRouter()
 	r.HandleFunc("/", handleIndex)
+	r.HandleFunc("/favicon.ico", handleFavicon)
 	r.HandleFunc("/report", handleReport)
 	r.HandleFunc("/login", handleLogin)
 	r.HandleFunc("/list", handleList)

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"github.com/gorilla/mux"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -11,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gorilla/mux"
 	"github.com/kaginawa/kaginawa-server"
 )
 
@@ -43,6 +43,10 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 	}{
 		kaginawa.Version(),
 	})
+}
+
+func handleFavicon(w http.ResponseWriter, r *http.Request) {
+	http.ServeFile(w, r, "assets/favicon.ico")
 }
 
 func handleLogin(w http.ResponseWriter, r *http.Request) {
