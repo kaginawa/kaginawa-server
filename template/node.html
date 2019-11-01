@@ -40,19 +40,27 @@
             <td>{{.Report.SSHServerHost}}:{{.Report.SSHRemotePort}}</td>
         </tr>
     {{end}}
-    {{if .Report.PingTarget}}
+    {{if gt .Report.RTTMills 0}}
         <tr>
-            <th>Ping Latency</th>
-            <td>{{.Report.PingMills}}</td>
+            <th>Round Trip Time</th>
+            <td>{{.Report.RTTMills}}ms</td>
         </tr>
+    {{end}}
+    {{if gt .Report.DownloadKBPS 0}}
         <tr>
-            <th>Ping Target</th>
-            <td>{{.Report.PingTarget}}</td>
+            <th>Download Throughput</th>
+            <td>{{.Report.DownloadKBPS}}kbps ({{.Report.DownloadMBPS}}Mbps)</td>
+        </tr>
+    {{end}}
+    {{if gt .Report.UploadKBPS 0}}
+        <tr>
+            <th>Upload Throughput</th>
+            <td>{{.Report.UploadKBPS}}kbps ({{.Report.DownloadMBPS}}Mbps)</td>
         </tr>
     {{end}}
     <tr>
-        <th>Generation Time (ms)</th>
-        <td>{{.Report.GenMillis}}</td>
+        <th>Generation Time</th>
+        <td>{{.Report.GenMillis}}ms</td>
     </tr>
     <tr>
         <th>Result</th>

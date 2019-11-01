@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -30,8 +31,9 @@ type report struct {
 	LocalIPv4      string   `json:"ip4_local" bson:"ip4_local"`               // Local IPv6 address
 	LocalIPv6      string   `json:"ip6_local" bson:"ip6_local"`               // Local IPv6 address
 	Hostname       string   `json:"hostname" bson:"hostname"`                 // OS Hostname
-	PingMills      float64  `json:"ping_ms" bson:"ping_ms"`                   // Ping latency milliseconds
-	PingTarget     string   `json:"ping_target" bson:"ping_target"`           // Ping target for result
+	RTTMills       int64    `json:"rtt_ms" bson:"rtt_ms"`                     // Round trip time milliseconds
+	UploadKBPS     int64    `json:"upload_bps" bson:"upload_bps"`             // Upload throughput bps
+	DownloadKBPS   int64    `json:"download_bps" bson:"download_bps"`         // Download throughput bps
 	Errors         []string `json:"errors" bson:"errors"`                     // List of errors
 	Payload        string   `json:"payload" bson:"payload"`                   // Custom content provided by payload command
 	PayloadCmd     string   `json:"payload_cmd" bson:"payload_cmd"`           // Executed payload command
@@ -50,6 +52,14 @@ type reply struct {
 	SSHServerUser string `json:"ssh_user,omitempty"`
 	SSHKey        string `json:"ssh_key,omitempty"`
 	SSHPassword   string `json:"ssh_password,omitempty"`
+}
+
+func (r report) DownloadMBPS() string {
+	return fmt.Sprintf("%.1f", float64(r.DownloadKBPS)/1024)
+}
+
+func (r report) UploadMBPS() string {
+	return fmt.Sprintf("%.1f", float64(r.UploadKBPS)/1024)
 }
 
 func handleReport(w http.ResponseWriter, r *http.Request) {
