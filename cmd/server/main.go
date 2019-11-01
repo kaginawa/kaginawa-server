@@ -68,6 +68,7 @@ func main() {
 	r.HandleFunc("/admin", handleAdmin)
 	r.HandleFunc("/new-key", handleNewAPIKey)
 	r.HandleFunc("/new-server", handleNewSSHServer)
+	r.HandleFunc("/measure/{kb}", handleMeasure)
 	r.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets"))))
 	log.Printf("Starting kaginawa server %s at port %s", kaginawa.Version(), port)
 	log.Println(http.ListenAndServe(":"+port, r))
