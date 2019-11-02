@@ -161,7 +161,8 @@ func (db *db) putReport(report report) error {
 }
 
 func (db *db) listReports() ([]report, error) {
-	cur, err := db.instance.Collection(nodeCollection).Find(context.Background(), bson.D{})
+	sort := &options.FindOptions{Sort: bson.M{"hostname": 1}}
+	cur, err := db.instance.Collection(nodeCollection).Find(context.Background(), bson.D{}, sort)
 	if err != nil {
 		return nil, err
 	}

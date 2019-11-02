@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -23,7 +24,26 @@ const (
 var (
 	templates = make(map[string]*template.Template)
 	funcMap   = template.FuncMap{
-		"time": func(ts int64, fmt string) string { return time.Unix(ts, 0).Format(fmt) },
+		// time format
+		"t_fmt": func(ts int64, fmt string) string {
+			return time.Unix(ts, 0).Format(fmt)
+		},
+		// fresh check
+		"t_fresh": func(ts int64, min int) bool {
+			return time.Unix(ts, 0).After(time.Now().Add(-time.Duration(min) * time.Minute))
+		},
+		// human readable byte size
+		"b_fmt": func(b uint64) string {
+			if b > 1024*1024*1024 {
+				return fmt.Sprintf("%dGB", b/1024/1024/1024)
+			} else if b > 1024*1024 {
+				return fmt.Sprintf("%dMB", b/1024/1024)
+			} else if b > 1024 {
+				return fmt.Sprintf("%dKB", b/1024)
+			} else {
+				return fmt.Sprintf("%dB", b)
+			}
+		},
 	}
 )
 
@@ -107,6 +127,8 @@ func handleList(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
+	var mem runtime.MemStats
+	runtime.ReadMemStats(&mem)
 	reports, err := database.listReports()
 	if err != nil {
 		log.Printf("failed to list reports: %v", err)
@@ -114,11 +136,17 @@ func handleList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	execTemplate(w, "list", struct {
-		Version string
-		Reports []report
+		Version       string
+		Reports       []report
+		GoVersion     string
+		NumGoroutines int
+		MemStats      runtime.MemStats
 	}{
 		kaginawa.Version(),
 		reports,
+		runtime.Version(),
+		runtime.NumGoroutine(),
+		mem,
 	})
 }
 
