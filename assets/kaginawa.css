@@ -27,3 +27,15 @@ pre {
 .center {
     text-align: center;
 }
+
+.state-ok {
+    color: green;
+}
+
+.state-ng {
+    color: red;
+}
+
+.state-old {
+    color: gray;
+}

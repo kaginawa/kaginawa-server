@@ -14,11 +14,11 @@
     <tbody>
     <tr>
         <th>Received Time</th>
-        <td>{{time .Report.ServerTime "2006/1/2 15:04:05"}}</td>
+        <td>{{t_fmt .Report.ServerTime "2006/1/2 15:04:05"}}</td>
     </tr>
     <tr>
         <th>Device Time</th>
-        <td>{{time .Report.DeviceTime "2006/1/2 15:04:05"}}</td>
+        <td>{{t_fmt .Report.DeviceTime "2006/1/2 15:04:05"}}</td>
     </tr>
     <tr>
         <th>Report Sequence Number</th>
@@ -108,7 +108,7 @@
     </tr>
     <tr>
         <th>Boot Time</th>
-        <td>{{time .Report.BootTime "2006/1/2 15:04:05"}}</td>
+        <td>{{t_fmt .Report.BootTime "2006/1/2 15:04:05"}}</td>
     </tr>
     <tr>
         <th>Adapter Name</th>
