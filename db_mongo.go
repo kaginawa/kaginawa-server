@@ -1,11 +1,10 @@
-package main
+package kaginawa
 
 import (
 	"context"
 	"fmt"
 	"log"
 	"strings"
-	"sync"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -20,64 +19,77 @@ const (
 )
 
 var (
-	knownAPIKeys sync.Map
-	sshServers   []sshServer
-	t            = true
-	upsert       = &options.ReplaceOptions{Upsert: &t}
+	t      = true
+	upsert = &options.ReplaceOptions{Upsert: &t}
 )
 
-type db struct {
+// MongoDB implements DB interface.
+type MongoDB struct {
 	client   *mongo.Client
 	instance *mongo.Database
 }
 
-type apiKey struct {
-	Key   string `bson:"key"`
-	Label string `bson:"label"`
-}
-
-type sshServer struct {
-	Host     string `bson:"host"`
-	Port     int    `bson:"port"`
-	User     string `bson:"user"`
-	Key      string `bson:"key"`
-	Password string `bson:"password"`
-}
-
-func newDB(endpoint string) (*db, error) {
+// NewMongoDB will creates MongoDB instance that implements DB interface.
+func NewMongoDB(endpoint string) (MongoDB, error) {
 	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(endpoint).SetRetryWrites(false))
 	if err != nil {
-		return nil, err
+		return MongoDB{}, err
 	}
-	return &db{
+	return MongoDB{
 		client:   client,
 		instance: client.Database(endpoint[strings.LastIndex(endpoint, "/")+1:]),
 	}, nil
 }
 
-// validateAPIKey validates API key. Results are ok, label and error.
-func (db *db) validateAPIKey(key string) (bool, string, error) {
+// ValidateAPIKey implements same signature of the DB interface.
+func (db MongoDB) ValidateAPIKey(key string) (bool, string, error) {
 	// Check cache first
-	if v, ok := knownAPIKeys.Load(key); ok {
+	if v, ok := KnownAPIKeys.Load(key); ok {
 		return ok, v.(string), nil
 	}
 
 	// Retrieve from database
 	result := db.instance.Collection(keyCollection).FindOne(context.Background(), bson.M{"key": key})
 	if result.Err() != nil {
+		if result.Err() == mongo.ErrNoDocuments {
+			return false, "", nil
+		}
 		return false, "", result.Err()
 	}
-	var apiKey apiKey
+	var apiKey APIKey
 	if err := result.Decode(&apiKey); err != nil {
 		return false, "", result.Err()
 	}
 
 	// Cache and return
-	knownAPIKeys.Store(apiKey.Key, apiKey.Label)
+	KnownAPIKeys.Store(apiKey.Key, apiKey.Label)
 	return true, apiKey.Label, nil
 }
 
-func (db *db) listAPIKeys() ([]apiKey, error) {
+// ValidateAdminAPIKey implements same signature of the DB interface.
+func (db MongoDB) ValidateAdminAPIKey(key string) (bool, string, error) {
+	// Check cache first
+	if v, ok := KnownAdminAPIKeys.Load(key); ok {
+		return ok, v.(string), nil
+	}
+
+	// Retrieve from database
+	result := db.instance.Collection(keyCollection).FindOne(context.Background(), bson.M{"key": key, "admin": true})
+	if result.Err() != nil {
+		return false, "", result.Err()
+	}
+	var apiKey APIKey
+	if err := result.Decode(&apiKey); err != nil {
+		return false, "", result.Err()
+	}
+
+	// Cache and return
+	KnownAdminAPIKeys.Store(apiKey.Key, apiKey.Label)
+	return true, apiKey.Label, nil
+}
+
+// ListAPIKeys implements same signature of the DB interface.
+func (db MongoDB) ListAPIKeys() ([]APIKey, error) {
 	cur, err := db.instance.Collection(keyCollection).Find(context.Background(), bson.D{})
 	if err != nil {
 		return nil, err
@@ -87,19 +99,23 @@ func (db *db) listAPIKeys() ([]apiKey, error) {
 			log.Printf("failed to close cursor: %v", err)
 		}
 	}()
-	var apiKeys []apiKey
+	var apiKeys []APIKey
 	for cur.Next(context.Background()) {
-		var result apiKey
+		var result APIKey
 		if err := cur.Decode(&result); err != nil {
 			return nil, err
 		}
 		apiKeys = append(apiKeys, result)
-		knownAPIKeys.Store(result.Key, result.Label) // update cache
+		KnownAPIKeys.Store(result.Key, result.Label) // update cache
+		if result.Admin {
+			KnownAdminAPIKeys.Store(result.Key, result.Label) // update cache
+		}
 	}
 	return apiKeys, nil
 }
 
-func (db *db) putAPIKey(apiKey apiKey) error {
+// PutAPIKey implements same signature of the DB interface.
+func (db MongoDB) PutAPIKey(apiKey APIKey) error {
 	raw, err := bson.Marshal(apiKey)
 	if err != nil {
 		return fmt.Errorf("failed to marshal: %w", err)
@@ -111,7 +127,8 @@ func (db *db) putAPIKey(apiKey apiKey) error {
 	return nil
 }
 
-func (db *db) listSSHServers() ([]sshServer, error) {
+// ListSSHServers implements same signature of the DB interface.
+func (db MongoDB) ListSSHServers() ([]SSHServer, error) {
 	cur, err := db.instance.Collection(serverCollection).Find(context.Background(), bson.D{})
 	if err != nil {
 		return nil, err
@@ -121,19 +138,20 @@ func (db *db) listSSHServers() ([]sshServer, error) {
 			log.Printf("failed to close cursor: %v", err)
 		}
 	}()
-	var servers []sshServer
+	var servers []SSHServer
 	for cur.Next(context.Background()) {
-		var result sshServer
+		var result SSHServer
 		if err := cur.Decode(&result); err != nil {
 			return nil, err
 		}
 		servers = append(servers, result)
 	}
-	sshServers = servers // update cache
+	SSHServers = servers // update cache
 	return servers, nil
 }
 
-func (db *db) putSSHServer(server sshServer) error {
+// PutSSHServer implements same signature of the DB interface.
+func (db MongoDB) PutSSHServer(server SSHServer) error {
 	raw, err := bson.Marshal(server)
 	if err != nil {
 		return fmt.Errorf("failed to marshal: %w", err)
@@ -145,7 +163,8 @@ func (db *db) putSSHServer(server sshServer) error {
 	return nil
 }
 
-func (db *db) putReport(report report) error {
+// PutReport implements same signature of the DB interface.
+func (db MongoDB) PutReport(report Report) error {
 	raw, err := bson.Marshal(report)
 	if err != nil {
 		return fmt.Errorf("failed to marshal: %w", err)
@@ -160,7 +179,8 @@ func (db *db) putReport(report report) error {
 	return nil
 }
 
-func (db *db) listReports() ([]report, error) {
+// ListReports implements same signature of the DB interface.
+func (db MongoDB) ListReports() ([]Report, error) {
 	sort := &options.FindOptions{Sort: bson.M{"hostname": 1}}
 	cur, err := db.instance.Collection(nodeCollection).Find(context.Background(), bson.D{}, sort)
 	if err != nil {
@@ -171,9 +191,9 @@ func (db *db) listReports() ([]report, error) {
 			log.Printf("failed to close cursor: %v", err)
 		}
 	}()
-	var reports []report
+	reports := make([]Report, 0)
 	for cur.Next(context.Background()) {
-		var result report
+		var result Report
 		if err := cur.Decode(&result); err != nil {
 			return nil, err
 		}
@@ -182,26 +202,41 @@ func (db *db) listReports() ([]report, error) {
 	return reports, nil
 }
 
-func (db *db) getReportByID(id string) (*report, error) {
+// GetReportByID implements same signature of the DB interface.
+func (db MongoDB) GetReportByID(id string) (*Report, error) {
 	result := db.instance.Collection(nodeCollection).FindOne(context.Background(), bson.M{"id": id})
 	if result.Err() != nil {
+		if result.Err() == mongo.ErrNoDocuments {
+			return nil, nil
+		}
 		return nil, result.Err()
 	}
-	var report report
+	var report Report
 	if err := result.Decode(&report); err != nil {
 		return nil, err
 	}
 	return &report, nil
 }
 
-func (db *db) getReportByCustomID(customID string) (*report, error) {
-	result := db.instance.Collection(nodeCollection).FindOne(context.Background(), bson.M{"custom_id": customID})
-	if result.Err() != nil {
-		return nil, result.Err()
-	}
-	var report report
-	if err := result.Decode(&report); err != nil {
+// GetReportByCustomID implements same signature of the DB interface.
+func (db MongoDB) GetReportByCustomID(customID string) ([]Report, error) {
+	sort := &options.FindOptions{Sort: bson.M{"hostname": 1}}
+	cur, err := db.instance.Collection(nodeCollection).Find(context.Background(), bson.M{"custom_id": customID}, sort)
+	if err != nil {
 		return nil, err
 	}
-	return &report, nil
+	defer func() {
+		if err := cur.Close(context.Background()); err != nil {
+			log.Printf("failed to close cursor: %v", err)
+		}
+	}()
+	reports := make([]Report, 0)
+	for cur.Next(context.Background()) {
+		var result Report
+		if err := cur.Decode(&result); err != nil {
+			return nil, err
+		}
+		reports = append(reports, result)
+	}
+	return reports, nil
 }

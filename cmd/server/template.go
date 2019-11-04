@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io/ioutil"
@@ -16,9 +17,10 @@ import (
 )
 
 const (
-	templateDir    = "template"
-	templateExt    = ".html"
-	authCookieName = "kaginawa-auth"
+	templateDir     = "template"
+	templateExt     = ".html"
+	authCookieName  = "kaginawa-auth"
+	contentTypeJSON = "application/json"
 )
 
 var (
@@ -59,10 +61,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	execTemplate(w, "index", struct {
-		Version string
-	}{
-		kaginawa.Version(),
-	})
+	}{})
 }
 
 func handleFavicon(w http.ResponseWriter, r *http.Request) {
@@ -75,10 +74,7 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 		fallthrough
 	case http.MethodGet:
 		execTemplate(w, "login", struct {
-			Version string
-		}{
-			kaginawa.Version(),
-		})
+		}{})
 	case http.MethodPost:
 		if err := r.ParseForm(); err != nil {
 			log.Printf("failed to parse form: %v", err)
@@ -111,38 +107,44 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 			Expires:  time.Now().AddDate(1, 0, 0),
 			HttpOnly: true,
 		})
-		http.Redirect(w, r, "/list", http.StatusSeeOther)
+		http.Redirect(w, r, "/nodes", http.StatusSeeOther)
 		log.Print("user login")
 	default:
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 	}
 }
 
-func handleList(w http.ResponseWriter, r *http.Request) {
+func handleNodes(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
 	}
+	if r.Header.Get("Accept") == contentTypeJSON {
+		handleNodesAPI(w, r)
+	} else {
+		handleNodesWeb(w, r)
+	}
+}
+
+func handleNodesWeb(w http.ResponseWriter, r *http.Request) {
 	if !validateCookie(r) {
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
 	var mem runtime.MemStats
 	runtime.ReadMemStats(&mem)
-	reports, err := database.listReports()
+	reports, err := database.ListReports()
 	if err != nil {
 		log.Printf("failed to list reports: %v", err)
 		http.Error(w, "Database unavailable", http.StatusInternalServerError)
 		return
 	}
-	execTemplate(w, "list", struct {
-		Version       string
-		Reports       []report
+	execTemplate(w, "nodes", struct {
+		Reports       []kaginawa.Report
 		GoVersion     string
 		NumGoroutines int
 		MemStats      runtime.MemStats
 	}{
-		kaginawa.Version(),
 		reports,
 		runtime.Version(),
 		runtime.NumGoroutine(),
@@ -150,11 +152,66 @@ func handleList(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+func handleNodesAPI(w http.ResponseWriter, r *http.Request) {
+	apiKey := strings.Replace(r.Header.Get("Authorization"), "token ", "", 1)
+	if len(apiKey) == 0 {
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+	if ok, _, err := database.ValidateAdminAPIKey(apiKey); !ok || err != nil {
+		if err != nil {
+			log.Printf("failed to validate admin api key: %v", err)
+			http.Error(w, "Database unavailable", http.StatusInternalServerError)
+			return
+		}
+		if !ok {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+	}
+	customID := r.URL.Query().Get("custom-id")
+	reports := make([]kaginawa.Report, 0)
+	if len(customID) > 0 {
+		records, err := database.GetReportByCustomID(customID)
+		if err != nil {
+			log.Printf("failed to list reports: %v", err)
+			http.Error(w, "Database unavailable", http.StatusInternalServerError)
+			return
+		}
+		reports = records
+	} else {
+		records, err := database.ListReports()
+		if err != nil {
+			log.Printf("failed to list reports: %v", err)
+			http.Error(w, "Database unavailable", http.StatusInternalServerError)
+			return
+		}
+		reports = records
+	}
+	body, err := json.Marshal(reports)
+	if err != nil {
+		log.Printf("failed to marshal response: %v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
+	w.Header().Add("Content-Type", contentTypeJSON)
+	if _, err := w.Write(body); err != nil {
+		log.Printf("failed to write body: %v", err)
+	}
+}
+
 func handleNode(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
 	}
+	if r.Header.Get("Accept") == contentTypeJSON {
+		handleNodeAPI(w, r)
+	} else {
+		handleNodeWeb(w, r)
+	}
+}
+
+func handleNodeWeb(w http.ResponseWriter, r *http.Request) {
 	if !validateCookie(r) {
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
@@ -164,19 +221,60 @@ func handleNode(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	rep, err := database.getReportByID(id)
+	rep, err := database.GetReportByID(id)
 	if err != nil {
-		log.Printf("failed to get report (id=%s): %v", id, err)
+		log.Printf("failed to get Report (id=%s): %v", id, err)
 		http.Error(w, "Database unavailable", http.StatusInternalServerError)
 		return
 	}
 	execTemplate(w, "node", struct {
-		Version string
-		Report  report
+		Report kaginawa.Report
 	}{
-		kaginawa.Version(),
 		*rep,
 	})
+}
+
+func handleNodeAPI(w http.ResponseWriter, r *http.Request) {
+	apiKey := strings.Replace(r.Header.Get("Authorization"), "token ", "", 1)
+	if len(apiKey) == 0 {
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
+	if ok, _, err := database.ValidateAdminAPIKey(apiKey); !ok || err != nil {
+		if err != nil {
+			log.Printf("failed to validate admin api key: %v", err)
+			http.Error(w, "Database unavailable", http.StatusInternalServerError)
+			return
+		}
+		if !ok {
+			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+			return
+		}
+	}
+	id := mux.Vars(r)["id"]
+	if len(id) == 0 {
+		http.NotFound(w, r)
+		return
+	}
+	record, err := database.GetReportByID(id)
+	if err != nil {
+		log.Printf("failed to get report: %v", err)
+		http.Error(w, "Database unavailable", http.StatusInternalServerError)
+		return
+	}
+	if record == nil {
+		http.NotFound(w, r)
+		return
+	}
+	body, err := json.Marshal(record)
+	if err != nil {
+		log.Printf("failed to marshal response: %v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
+	w.Header().Add("Content-Type", contentTypeJSON)
+	if _, err := w.Write(body); err != nil {
+		log.Printf("failed to write body: %v", err)
+	}
 }
 
 func handleAdmin(w http.ResponseWriter, r *http.Request) {
@@ -188,24 +286,22 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
-	keys, err := database.listAPIKeys()
+	keys, err := database.ListAPIKeys()
 	if err != nil {
 		log.Printf("failed to list api keys: %v", err)
 		http.Error(w, "Database unavailable", http.StatusInternalServerError)
 		return
 	}
-	servers, err := database.listSSHServers()
+	servers, err := database.ListSSHServers()
 	if err != nil {
 		log.Printf("failed to list ssh servers: %v", err)
 		http.Error(w, "Database unavailable", http.StatusInternalServerError)
 		return
 	}
 	execTemplate(w, "admin", struct {
-		Version    string
-		APIKeys    []apiKey
-		SSHServers []sshServer
+		APIKeys    []kaginawa.APIKey
+		SSHServers []kaginawa.SSHServer
 	}{
-		kaginawa.Version(),
 		keys,
 		servers,
 	})
@@ -227,11 +323,12 @@ func handleNewAPIKey(w http.ResponseWriter, r *http.Request) {
 	}
 	k := strings.TrimSpace(r.FormValue("key"))
 	l := strings.TrimSpace(r.FormValue("label"))
+	a := r.FormValue("admin") == "yes"
 	if len(k) == 0 {
 		http.Error(w, "Key is empty", http.StatusBadRequest)
 		return
 	}
-	if err := database.putAPIKey(apiKey{Key: k, Label: l}); err != nil {
+	if err := database.PutAPIKey(kaginawa.APIKey{Key: k, Label: l, Admin: a}); err != nil {
 		log.Printf("failed to put api key: %v", err)
 		http.Error(w, "Database unavailable", http.StatusInternalServerError)
 		return
@@ -275,7 +372,7 @@ func handleNewSSHServer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Key or password is empty", http.StatusBadRequest)
 		return
 	}
-	if err := database.putSSHServer(sshServer{Host: h, Port: port, User: u, Key: k, Password: pw}); err != nil {
+	if err := database.PutSSHServer(kaginawa.SSHServer{Host: h, Port: port, User: u, Key: k, Password: pw}); err != nil {
 		log.Printf("failed to put ssh server: %v", err)
 		http.Error(w, "Database unavailable", http.StatusInternalServerError)
 		return

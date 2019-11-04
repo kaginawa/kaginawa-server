@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Kaginawa Server</title>
-    <link rel="stylesheet" href="/assets/kaginawa.css?v={{.Version}}"/>
+    <link rel="stylesheet" href="/assets/kaginawa.css"/>
 </head>
 <body>
 <h1>Kaginawa Server</h1>
@@ -28,7 +28,7 @@
         {{range .Reports}}
             {{$alive := t_fresh .ServerTime 5}}
             <tr{{if not $alive}} class="state-old"{{end}}>
-                <td><a href="/node/{{.ID}}">{{.ID}}</a></td>
+                <td><a href="/nodes/{{.ID}}">{{.ID}}</a></td>
                 <td>{{.CustomID}}</td>
                 <td>{{.Hostname}}</td>
                 <td class="{{if $alive}}state-ok{{else}}state-old{{end}}">
@@ -63,6 +63,6 @@
     GoVersion: {{.GoVersion}}
 </p>
 <hr/>
-<address>Kaginawa Server {{.Version}}</address>
+<address>Kaginawa Server</address>
 </body>
 </html>

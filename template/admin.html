@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>Kaginawa Server</title>
-    <link rel="stylesheet" href="/assets/kaginawa.css?v={{.Version}}"/>
+    <link rel="stylesheet" href="/assets/kaginawa.css"/>
 </head>
 <body>
 <h1>Kaginawa Server</h1>
-<button onclick="document.location='/list'">List</button>
+<button onclick="document.location='/nodes'">List</button>
 <h2>API Keys</h2>
 {{if .APIKeys}}
     <table>
@@ -15,6 +15,7 @@
         <tr>
             <th>API Key</th>
             <th>Label</th>
+            <th>Admin</th>
         </tr>
         </thead>
         <tbody>
@@ -22,6 +23,7 @@
             <tr>
                 <td>{{.Key}}</td>
                 <td>{{.Label}}</td>
+                <td>{{if .Admin}}✔{{end}}</td>
             </tr>
         {{end}}
         </tbody>
@@ -37,6 +39,10 @@
     <div>
         <label for="input-label">Label</label>
         <input type="text" id="input-label" name="label"/>
+    </div>
+    <div>
+        <label for="input-admin">Admin</label>
+        <input type="checkbox" id="input-admin" name="admin" value="yes"/>
     </div>
     <div>
         <input type="submit"/>
@@ -94,6 +100,6 @@
     Either key or password is required.
 </form>
 <hr/>
-<address>Kaginawa Server {{.Version}}</address>
+<address>Kaginawa Server</address>
 </body>
 </html>
