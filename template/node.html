@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>Kaginawa Server</title>
-    <link rel="stylesheet" href="/assets/kaginawa.css?v={{.Version}}"/>
+    <link rel="stylesheet" href="/assets/kaginawa.css"/>
 </head>
 <body>
 <h1>Kaginawa Server</h1>
-<button onclick="document.location='/list'">List</button>
+<button onclick="document.location='/nodes'">List</button>
 <h2>{{.Report.ID}}{{if .Report.CustomID}} / {{.Report.CustomID}}{{end}}</h2>
 <h3>Newest Report Information</h3>
 <table>
@@ -28,7 +28,7 @@
         <th>SSH Status</th>
         <td>
             {{if ne .Report.SSHRemotePort 0}}
-                <span style="color: green">Connected</span>
+                <span class="state-ok">Connected</span>
             {{else}}
                 Not connected or disabled
             {{end}}
@@ -66,11 +66,11 @@
         <th>Result</th>
         <td>
             {{if .Report.Errors}}
-                <span style="color: red">
+                <span class="state-ng">
                     {{if eq (len .Report.Errors) 1}}1 error{{else}}{{len .Report.Errors}} errors{{end}}
                 </span>
             {{else}}
-                <span style="color: green">OK</span>
+                <span class="state-ok">OK</span>
             {{end}}
         </td>
     </tr>
@@ -137,6 +137,6 @@
     </tbody>
 </table>
 <hr/>
-<address>Kaginawa Server {{.Version}}</address>
+<address>Kaginawa Server</address>
 </body>
 </html>

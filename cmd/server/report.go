@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"log"
 	"math/rand"
@@ -10,39 +9,9 @@ import (
 	"net/http"
 	"strings"
 	"time"
+
+	"github.com/kaginawa/kaginawa-server"
 )
-
-// report defines all of report attributes
-type report struct {
-	// Kagiwana shared fields
-	ID             string   `json:"id" bson:"id"`                             // MAC address of the primary network interface
-	Runtime        string   `json:"runtime" bson:"runtime"`                   // OS and arch
-	Success        bool     `json:"success" bson:"success"`                   // Equals len(Errors) == 0
-	Sequence       int      `json:"seq" bson:"seq"`                           // Report sequence number, resets by reboot
-	DeviceTime     int64    `json:"device_time" bson:"device_time"`           // Device time (UTC) by time.Now().UTC().Unix()
-	BootTime       int64    `json:"boot_time" bson:"boot_time"`               // Device boot time (UTC)
-	GenMillis      int64    `json:"gen_ms" bson:"gen_ms"`                     // Generation time milliseconds
-	AgentVersion   string   `json:"agent_version" bson:"agent_version"`       // Agent version
-	CustomID       string   `json:"custom_id" bson:"custom_id"`               // User specified ID
-	SSHServerHost  string   `json:"ssh_server_host" bson:"ssh_server_host"`   // Connected SSH server host
-	SSHRemotePort  int      `json:"ssh_remote_port" bson:"ssh_remote_port"`   // Connected SSH remote port
-	SSHConnectTime int64    `json:"ssh_connect_time" bson:"ssh_connect_time"` // Connected time of the SSH
-	Adapter        string   `json:"adapter" bson:"adapter"`                   // Name of network adapter
-	LocalIPv4      string   `json:"ip4_local" bson:"ip4_local"`               // Local IPv6 address
-	LocalIPv6      string   `json:"ip6_local" bson:"ip6_local"`               // Local IPv6 address
-	Hostname       string   `json:"hostname" bson:"hostname"`                 // OS Hostname
-	RTTMills       int64    `json:"rtt_ms" bson:"rtt_ms"`                     // Round trip time milliseconds
-	UploadKBPS     int64    `json:"upload_bps" bson:"upload_bps"`             // Upload throughput bps
-	DownloadKBPS   int64    `json:"download_bps" bson:"download_bps"`         // Download throughput bps
-	Errors         []string `json:"errors" bson:"errors"`                     // List of errors
-	Payload        string   `json:"payload" bson:"payload"`                   // Custom content provided by payload command
-	PayloadCmd     string   `json:"payload_cmd" bson:"payload_cmd"`           // Executed payload command
-
-	// Server-side injected fields
-	GlobalIP   string `json:"ip_global" bson:"ip_global"`     // Global IP address
-	GlobalHost string `json:"host_global" bson:"host_global"` // Reverse lookup result for global IP address
-	ServerTime int64  `json:"server_time" bson:"server_time"` // Server-side consumed UTC time
-}
 
 // reply defines all of reply message attributes
 type reply struct {
@@ -52,14 +21,6 @@ type reply struct {
 	SSHServerUser string `json:"ssh_user,omitempty"`
 	SSHKey        string `json:"ssh_key,omitempty"`
 	SSHPassword   string `json:"ssh_password,omitempty"`
-}
-
-func (r report) DownloadMBPS() string {
-	return fmt.Sprintf("%.1f", float64(r.DownloadKBPS)/1024)
-}
-
-func (r report) UploadMBPS() string {
-	return fmt.Sprintf("%.1f", float64(r.UploadKBPS)/1024)
 }
 
 func handleReport(w http.ResponseWriter, r *http.Request) {
@@ -72,7 +33,7 @@ func handleReport(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
-	if ok, _, err := database.validateAPIKey(apiKey); !ok || err != nil {
+	if ok, _, err := database.ValidateAPIKey(apiKey); !ok || err != nil {
 		if err != nil {
 			log.Printf("failed to validate api key: %v", err)
 			http.Error(w, "Database unavailable", http.StatusInternalServerError)
@@ -89,8 +50,8 @@ func handleReport(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Response read error", http.StatusInternalServerError)
 		return
 	}
-	defer safeClose(r.Body, "report body")
-	var report report
+	defer safeClose(r.Body, "Report body")
+	var report kaginawa.Report
 	if err := json.Unmarshal(body, &report); err != nil {
 		http.Error(w, "Response unmarshal error", http.StatusBadRequest)
 		return
@@ -120,8 +81,8 @@ func handleReport(w http.ResponseWriter, r *http.Request) {
 		report.GlobalHost = report.GlobalIP
 	}
 
-	if err := database.putReport(report); err != nil {
-		log.Printf("failed to put report (id=%s): %v", report.ID, err)
+	if err := database.PutReport(report); err != nil {
+		log.Printf("failed to put Report (id=%s): %v", report.ID, err)
 		http.Error(w, "Failed to put database", http.StatusInternalServerError)
 		return
 	}
@@ -129,15 +90,15 @@ func handleReport(w http.ResponseWriter, r *http.Request) {
 	// TODO: implement reboot request feature
 
 	var msg reply
-	if len(sshServers) > 0 {
-		i := rand.Int() % len(sshServers)
+	if len(kaginawa.SSHServers) > 0 {
+		i := rand.Int() % len(kaginawa.SSHServers)
 		msg = reply{
 			Reboot:        false,
-			SSHServerHost: sshServers[i].Host,
-			SSHServerPort: sshServers[i].Port,
-			SSHServerUser: sshServers[i].User,
-			SSHKey:        sshServers[i].Key,
-			SSHPassword:   sshServers[i].Password,
+			SSHServerHost: kaginawa.SSHServers[i].Host,
+			SSHServerPort: kaginawa.SSHServers[i].Port,
+			SSHServerUser: kaginawa.SSHServers[i].User,
+			SSHKey:        kaginawa.SSHServers[i].Key,
+			SSHPassword:   kaginawa.SSHServers[i].Password,
 		}
 	}
 	rawReply, err := json.MarshalIndent(msg, "", "  ")
