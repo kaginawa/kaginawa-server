@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net/http"
@@ -34,26 +35,12 @@ func handleCommand(w http.ResponseWriter, r *http.Request) {
 
 	// Validate API key
 	browser := false
-	apiKey := strings.Replace(r.Header.Get("Authorization"), "token ", "", 1)
-	if len(apiKey) == 0 {
+	if !validateAPIKey(r, true) {
 		if !validateCookie(r) {
 			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 			return
-		} else {
-			browser = true
 		}
-	} else {
-		if ok, _, err := database.ValidateAdminAPIKey(apiKey); !ok {
-			if err != nil {
-				log.Printf("failed to validate admin api key: %v", err)
-				http.Error(w, "Database unavailable", http.StatusInternalServerError)
-				return
-			}
-			if !ok {
-				http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-				return
-			}
-		}
+		browser = true
 	}
 
 	// Target information
@@ -128,29 +115,19 @@ func handleCommand(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "SSH server configuration error", http.StatusServiceUnavailable)
 		return
 	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
-	defer cancel()
-	ch := make(chan commandResponse, 1)
-	go func() { ch <- exec(server, report, serverConfig, targetConfig, command) }()
-	select {
-	case wrapped := <-ch:
-		if wrapped.err != nil {
-			log.Print(wrapped.err)
-			http.Error(w, wrapped.err.Error(), http.StatusServiceUnavailable)
-			return
-		}
-		if browser {
-			handleNodeWeb(w, r, id, user, password, string(wrapped.data))
-		} else {
-			w.Header().Add("Content-Type", "text/plain")
-			if _, err := w.Write(wrapped.data); err != nil {
-				log.Printf("failed to write body: %v", err)
-			}
-		}
-	case <-ctx.Done():
-		http.Error(w, "Request timeout", http.StatusServiceUnavailable)
+	resp, err := execWithTimeout(server, report, serverConfig, targetConfig, command, timeout)
+	if err != nil {
+		log.Print(err)
+		http.Error(w, err.Error(), http.StatusServiceUnavailable)
 		return
+	}
+	if browser {
+		handleNodeWeb(w, r, id, user, password, string(resp))
+	} else {
+		w.Header().Add("Content-Type", "text/plain")
+		if _, err := w.Write(resp); err != nil {
+			log.Printf("failed to write body: %v", err)
+		}
 	}
 }
 
@@ -173,7 +150,23 @@ func createSSHConfig(user, key, password string) (*ssh.ClientConfig, error) {
 	return &config, nil
 }
 
-func exec(s kaginawa.SSHServer, r *kaginawa.Report, sc, tc *ssh.ClientConfig, command string) commandResponse {
+func execWithTimeout(s kaginawa.SSHServer, r *kaginawa.Report, sc, tc *ssh.ClientConfig, cmd string, timeout time.Duration) ([]byte, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	ch := make(chan commandResponse, 1)
+	go func() { ch <- exec(s, r, sc, tc, cmd) }()
+	select {
+	case wrapped := <-ch:
+		if wrapped.err != nil {
+			return nil, wrapped.err
+		}
+		return wrapped.data, nil
+	case <-ctx.Done():
+		return nil, errors.New("timeout")
+	}
+}
+
+func exec(s kaginawa.SSHServer, r *kaginawa.Report, sc, tc *ssh.ClientConfig, cmd string) commandResponse {
 	// Connect to the ssh server
 	conn, err := ssh.Dial("tcp", s.Addr(), sc)
 	if err != nil {
@@ -199,7 +192,7 @@ func exec(s kaginawa.SSHServer, r *kaginawa.Report, sc, tc *ssh.ClientConfig, co
 	if err != nil {
 		return commandResponse{err: fmt.Errorf("failed to create ssh session: %w", err)}
 	}
-	output, err := session.CombinedOutput(command)
+	output, err := session.CombinedOutput(cmd)
 	if err != nil {
 		return commandResponse{err: fmt.Errorf("failed to submit ssh command: %w", err)}
 	}
