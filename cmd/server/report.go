@@ -33,7 +33,7 @@ func handleReport(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
-	if ok, _, err := database.ValidateAPIKey(apiKey); !ok || err != nil {
+	if ok, _, err := database.ValidateAPIKey(apiKey); !ok {
 		if err != nil {
 			log.Printf("failed to validate api key: %v", err)
 			http.Error(w, "Database unavailable", http.StatusInternalServerError)

@@ -30,8 +30,10 @@ type DB interface {
 	PutSSHServer(server SSHServer) error
 	// PutReport puts a report.
 	PutReport(report Report) error
+	// CountReports counts number of reports.
+	CountReports() (int64, error)
 	// ListReports scans all reports.
-	ListReports() ([]Report, error)
+	ListReports(skip, limit int64) ([]Report, error)
 	// GetReportByID queries a report by id.
 	GetReportByID(id string) (*Report, error)
 	// GetReportByCustomID queries a report by custom id.
@@ -52,6 +54,11 @@ type SSHServer struct {
 	User     string `bson:"user"`
 	Key      string `bson:"key"`
 	Password string `bson:"password"`
+}
+
+// Addr formats address by host:port.
+func (s SSHServer) Addr() string {
+	return fmt.Sprintf("%s:%d", s.Host, s.Port)
 }
 
 // Report defines all of Report attributes

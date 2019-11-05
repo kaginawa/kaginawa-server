@@ -136,6 +136,29 @@
     </tr>
     </tbody>
 </table>
+<h3>Command</h3>
+<form method="post" action="/nodes/{{.Report.ID}}/command">
+    <div>
+        <label for="input-user">User</label>
+        <input type="text" id="input-user" name="user" value="{{.User}}"/>
+    </div>
+    <div>
+        <label for="input-password">Password</label>
+        <input type="password" id="input-password" name="password" value="{{.Password}}"/>
+    </div>
+    <div>
+        <label for="input-command">Command</label>
+        <input type="text" id="input-command" name="command"/>
+    </div>
+    <div>
+        <label for="input-timeout">Timeout (sec)</label>
+        <input type="number" min="1" id="input-timeout" name="timeout" value="10"/>
+    </div>
+    <div>
+        <input type="submit"/>
+    </div>
+</form>
+<pre>{{.Response}}</pre>
 <hr/>
 <address>Kaginawa Server</address>
 </body>
