@@ -140,15 +140,15 @@
 <form method="post" action="/nodes/{{.Report.ID}}/command">
     <div>
         <label for="input-user">User</label>
-        <input type="text" id="input-user" name="user" value="{{.User}}"/>
+        <input type="text" id="input-user" name="user" value="{{.User}}" autoComplete="nope"/>
     </div>
     <div>
         <label for="input-password">Password</label>
-        <input type="password" id="input-password" name="password" value="{{.Password}}"/>
+        <input type="password" id="input-password" name="password" value="{{.Password}}" autoComplete="nope"/>
     </div>
     <div>
         <label for="input-command">Command</label>
-        <input type="text" id="input-command" name="command"/>
+        <input type="text" id="input-command" name="command" autoComplete="nope"/>
     </div>
     <div>
         <label for="input-timeout">Timeout (sec)</label>

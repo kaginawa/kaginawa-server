@@ -159,21 +159,9 @@ func handleNodesWeb(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleNodesAPI(w http.ResponseWriter, r *http.Request) {
-	apiKey := strings.Replace(r.Header.Get("Authorization"), "token ", "", 1)
-	if len(apiKey) == 0 {
+	if !validateAPIKey(r, true) {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
-	}
-	if ok, _, err := database.ValidateAdminAPIKey(apiKey); !ok {
-		if err != nil {
-			log.Printf("failed to validate admin api key: %v", err)
-			http.Error(w, "Database unavailable", http.StatusInternalServerError)
-			return
-		}
-		if !ok {
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-			return
-		}
 	}
 	customID := r.URL.Query().Get("custom-id")
 	var reports []kaginawa.Report
@@ -261,16 +249,9 @@ func handleNodeAPI(w http.ResponseWriter, r *http.Request, id string) {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
-	if ok, _, err := database.ValidateAdminAPIKey(apiKey); !ok {
-		if err != nil {
-			log.Printf("failed to validate admin api key: %v", err)
-			http.Error(w, "Database unavailable", http.StatusInternalServerError)
-			return
-		}
-		if !ok {
-			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-			return
-		}
+	if !validateAPIKey(r, true) {
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
 	}
 	record, err := database.GetReportByID(id)
 	if err != nil {
@@ -428,12 +409,4 @@ func execTemplate(w http.ResponseWriter, name string, attributes interface{}) {
 		log.Printf("template error in %s: %v", name, err)
 		http.Error(w, "Template error: "+name, http.StatusInternalServerError)
 	}
-}
-
-func validateCookie(r *http.Request) bool {
-	cookie, err := r.Cookie(authCookieName)
-	if err != nil {
-		return false
-	}
-	return cookie.Value == fmt.Sprintf("%x", loginToken)
 }
