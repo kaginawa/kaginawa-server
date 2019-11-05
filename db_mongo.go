@@ -76,6 +76,9 @@ func (db MongoDB) ValidateAdminAPIKey(key string) (bool, string, error) {
 	// Retrieve from database
 	result := db.instance.Collection(keyCollection).FindOne(context.Background(), bson.M{"key": key, "admin": true})
 	if result.Err() != nil {
+		if result.Err() == mongo.ErrNoDocuments {
+			return false, "", nil
+		}
 		return false, "", result.Err()
 	}
 	var apiKey APIKey
@@ -179,10 +182,15 @@ func (db MongoDB) PutReport(report Report) error {
 	return nil
 }
 
+// CountReports counts number of records in node table.
+func (db MongoDB) CountReports() (int64, error) {
+	return db.instance.Collection(nodeCollection).CountDocuments(context.Background(), bson.D{})
+}
+
 // ListReports implements same signature of the DB interface.
-func (db MongoDB) ListReports() ([]Report, error) {
-	sort := &options.FindOptions{Sort: bson.M{"hostname": 1}}
-	cur, err := db.instance.Collection(nodeCollection).Find(context.Background(), bson.D{}, sort)
+func (db MongoDB) ListReports(skip, limit int64) ([]Report, error) {
+	opts := &options.FindOptions{Sort: bson.M{"hostname": 1}, Skip: &skip, Limit: &limit}
+	cur, err := db.instance.Collection(nodeCollection).Find(context.Background(), bson.D{}, opts)
 	if err != nil {
 		return nil, err
 	}

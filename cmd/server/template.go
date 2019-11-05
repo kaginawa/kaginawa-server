@@ -133,7 +133,13 @@ func handleNodesWeb(w http.ResponseWriter, r *http.Request) {
 	}
 	var mem runtime.MemStats
 	runtime.ReadMemStats(&mem)
-	reports, err := database.ListReports()
+	count, err := database.CountReports()
+	if err != nil {
+		log.Printf("failed to count reports: %v", err)
+		http.Error(w, "Database unavailable", http.StatusInternalServerError)
+		return
+	}
+	reports, err := database.ListReports(0, count)
 	if err != nil {
 		log.Printf("failed to list reports: %v", err)
 		http.Error(w, "Database unavailable", http.StatusInternalServerError)
@@ -158,7 +164,7 @@ func handleNodesAPI(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
-	if ok, _, err := database.ValidateAdminAPIKey(apiKey); !ok || err != nil {
+	if ok, _, err := database.ValidateAdminAPIKey(apiKey); !ok {
 		if err != nil {
 			log.Printf("failed to validate admin api key: %v", err)
 			http.Error(w, "Database unavailable", http.StatusInternalServerError)
@@ -170,7 +176,7 @@ func handleNodesAPI(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	customID := r.URL.Query().Get("custom-id")
-	reports := make([]kaginawa.Report, 0)
+	var reports []kaginawa.Report
 	if len(customID) > 0 {
 		records, err := database.GetReportByCustomID(customID)
 		if err != nil {
@@ -180,13 +186,22 @@ func handleNodesAPI(w http.ResponseWriter, r *http.Request) {
 		}
 		reports = records
 	} else {
-		records, err := database.ListReports()
+		count, err := database.CountReports()
+		if err != nil {
+			log.Printf("failed to count reports: %v", err)
+			http.Error(w, "Database unavailable", http.StatusInternalServerError)
+			return
+		}
+		records, err := database.ListReports(0, count)
 		if err != nil {
 			log.Printf("failed to list reports: %v", err)
 			http.Error(w, "Database unavailable", http.StatusInternalServerError)
 			return
 		}
 		reports = records
+	}
+	if reports == nil {
+		reports = []kaginawa.Report{}
 	}
 	body, err := json.Marshal(reports)
 	if err != nil {
@@ -200,25 +215,25 @@ func handleNodesAPI(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleNode(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+	if len(id) == 0 {
+		http.NotFound(w, r)
+		return
+	}
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
 	}
 	if r.Header.Get("Accept") == contentTypeJSON {
-		handleNodeAPI(w, r)
+		handleNodeAPI(w, r, id)
 	} else {
-		handleNodeWeb(w, r)
+		handleNodeWeb(w, r, id, "", "", "")
 	}
 }
 
-func handleNodeWeb(w http.ResponseWriter, r *http.Request) {
+func handleNodeWeb(w http.ResponseWriter, r *http.Request, id, user, password, response string) {
 	if !validateCookie(r) {
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
-		return
-	}
-	id := mux.Vars(r)["id"]
-	if len(id) == 0 {
-		http.NotFound(w, r)
 		return
 	}
 	rep, err := database.GetReportByID(id)
@@ -228,19 +243,25 @@ func handleNodeWeb(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	execTemplate(w, "node", struct {
-		Report kaginawa.Report
+		Report   kaginawa.Report
+		User     string
+		Password string
+		Response string
 	}{
 		*rep,
+		user,
+		password,
+		response,
 	})
 }
 
-func handleNodeAPI(w http.ResponseWriter, r *http.Request) {
+func handleNodeAPI(w http.ResponseWriter, r *http.Request, id string) {
 	apiKey := strings.Replace(r.Header.Get("Authorization"), "token ", "", 1)
 	if len(apiKey) == 0 {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
-	if ok, _, err := database.ValidateAdminAPIKey(apiKey); !ok || err != nil {
+	if ok, _, err := database.ValidateAdminAPIKey(apiKey); !ok {
 		if err != nil {
 			log.Printf("failed to validate admin api key: %v", err)
 			http.Error(w, "Database unavailable", http.StatusInternalServerError)
@@ -250,11 +271,6 @@ func handleNodeAPI(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 			return
 		}
-	}
-	id := mux.Vars(r)["id"]
-	if len(id) == 0 {
-		http.NotFound(w, r)
-		return
 	}
 	record, err := database.GetReportByID(id)
 	if err != nil {

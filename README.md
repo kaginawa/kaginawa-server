@@ -27,15 +27,13 @@ We recommend creating `logs` collection as a [capped collection](https://docs.mo
 
 ## Admin API
 
-Required HTTP headers:
-
-- `Accept: application/json`
-- `Authorization: token <admin_api_key>`
-
 ### List all nodes
 
 - Method: `GET`
 - Resource: `/nodes`
+- Headers:
+    - `Authorization: token <admin_api_key>`
+    - `Accept: application/json`
 - Response: List of all `Record` object (see [db.go](db.go) definition)
 
 Curl example:
@@ -49,7 +47,10 @@ curl -H "Authorization: token admin123" -H "Accept: application/json" -X GET "ht
 - Request: `GET `
 - Resource: `/nodes`
 - Query Params:
-    - `custom-id`
+    - (Optional) `custom-id`
+- Headers:
+    - `Authorization: token <admin_api_key>`
+    - `Accept: application/json`
 - Response: List of matched `Record` object (see [db.go](db.go) definition)
 
 This API can return multiple records. 
@@ -65,6 +66,9 @@ curl -H "Authorization: token admin123" -H "Accept: application/json" -X GET "ht
 
 - Method: `GET`
 - Resource: `/nodes/<ID>`
+- Headers:
+    - `Authorization: token <admin_api_key>`
+    - `Accept: application/json`
 - Response: A `Record` object (see [db.go](db.go) definition)
 
 Curl example:
@@ -72,6 +76,30 @@ Curl example:
 ```
 curl -H "Authorization: token admin123" -H "Accept: application/json" -X GET "http://localhost:8080/nodes/02:00:17:00:7d:b0"
 ```
+
+### Send command via ssh
+
+- Method: `POST`
+- Resource: `/nodes/<ID>/command`
+- Header:
+    - `Authorization: token <admin_api_key>`
+- Form params:
+    - `command` - command
+    - `user` - ssh user name
+    - (Optional) `key` - ssh private key
+    - (Optional) `password` - ssh password
+    - (Optional) `timeout` - timeout seconds (default: 30)
+- Response: Command result (MIME: `text/plain`)
+
+Curl example:
+
+```
+curl -H "Authorization: token admin123" -X POST -d user=pi -d password=raspberry -d timeout=10 -d command="ls -alh" "http://localhost:8080/nodes/02:00:17:00:7d:b0/command"
+```
+
+## License
+
+Kaginawa Server licensed under the [BSD 3-clause license](LICENSE).
 
 ## Author
 
