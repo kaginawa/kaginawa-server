@@ -45,6 +45,7 @@ func handleReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	report.ServerTime = time.Now().UTC().Unix()
+	report.APIKey = extractAPIKey(r)
 	log.Printf("REPORT from %s %s %d", report.ID, report.CustomID, report.SSHRemotePort)
 
 	// Pick global IP
