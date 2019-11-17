@@ -130,6 +130,26 @@
         <th>Reverse Lookup Result</th>
         <td>{{if .Report.GlobalHost}}{{.Report.GlobalHost}}{{else}}N/A{{end}}</td>
     </tr>
+    {{if .Report.DiskMountPoint}}
+        <tr>
+            <th>Usage of "{{.Report.DiskMountPoint}}"</th>
+            <td>
+                {{b_fmt .Report.DiskUsedBytes}} / {{b_fmt .Report.DiskTotalBytes}} ({{.Report.DiskUsageAsPercentage}})
+            </td>
+        </tr>
+        <tr>
+            <th>Device of "{{.Report.DiskMountPoint}}"</th>
+            <td>{{.Report.DiskDevice}}</td>
+        </tr>
+        <tr>
+            <th>Filesystem of "{{.Report.DiskMountPoint}}"</th>
+            <td>{{.Report.DiskFilesystem}}</td>
+        </tr>
+        <tr>
+            <th>Disk Label of "{{.Report.DiskMountPoint}}"</th>
+            <td>{{.Report.DiskLabel}}</td>
+        </tr>
+    {{end}}
     <tr>
         <th>Version</th>
         <td>{{.Report.AgentVersion}}</td>

@@ -35,7 +35,14 @@ var (
 			return time.Unix(ts, 0).After(time.Now().Add(-time.Duration(min) * time.Minute))
 		},
 		// human readable byte size
-		"b_fmt": func(b uint64) string {
+		"b_fmt": func(bytes interface{}) string {
+			var b uint64
+			switch bytes.(type) {
+			case uint64:
+				b = bytes.(uint64)
+			case int64:
+				b = uint64(bytes.(int64))
+			}
 			if b > 1024*1024*1024 {
 				return fmt.Sprintf("%dGB", b/1024/1024/1024)
 			} else if b > 1024*1024 {
