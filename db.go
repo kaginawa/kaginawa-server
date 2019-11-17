@@ -65,6 +65,7 @@ func (s SSHServer) Addr() string {
 type Report struct {
 	// Kagiwana shared fields
 	ID             string   `json:"id" bson:"id"`                                       // MAC address
+	Trigger        int      `json:"trigger" bson:"trigger"`                             // Report trigger (-1/0/n)
 	Runtime        string   `json:"runtime" bson:"runtime"`                             // OS and arch
 	Success        bool     `json:"success" bson:"success"`                             // Equals len(Errors) == 0
 	Sequence       int      `json:"seq" bson:"seq"`                                     // Report sequence number
@@ -97,6 +98,7 @@ type Report struct {
 	GlobalIP   string `json:"ip_global" bson:"ip_global"`     // Global IP address
 	GlobalHost string `json:"host_global" bson:"host_global"` // Reverse lookup result for global IP address
 	ServerTime int64  `json:"server_time" bson:"server_time"` // Server-side consumed UTC time
+	APIKey     string `json:"api_key" bson:"api_key"`         // Used api key
 }
 
 // DownloadMBPS formats download throughput as Mbps.
@@ -115,4 +117,19 @@ func (r Report) DiskUsageAsPercentage() string {
 		return "0%"
 	}
 	return fmt.Sprintf("%.1f%%", float64(r.DiskUsedBytes)/float64(r.DiskTotalBytes)*100)
+}
+
+// IsBootTimeReport checks report triggered by boot time or not.
+func (r Report) IsBootTimeReport() bool {
+	return r.Trigger == 0
+}
+
+// IsSSHConnectedReport checks report triggered by ssh connected or not.
+func (r Report) IsSSHConnectedReport() bool {
+	return r.Trigger == -1
+}
+
+// IsIntervalReport checks report triggered by interval timer or not.
+func (r Report) IsIntervalReport() bool {
+	return r.Trigger > 0
 }

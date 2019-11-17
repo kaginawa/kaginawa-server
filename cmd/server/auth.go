@@ -8,7 +8,7 @@ import (
 )
 
 func validateAPIKey(r *http.Request, admin bool) bool {
-	apiKey := strings.Replace(r.Header.Get("Authorization"), "token ", "", 1)
+	apiKey := extractAPIKey(r)
 	if len(apiKey) == 0 {
 		return false
 	}
@@ -34,6 +34,10 @@ func validateAPIKey(r *http.Request, admin bool) bool {
 		}
 	}
 	return true
+}
+
+func extractAPIKey(r *http.Request) string {
+	return strings.Replace(r.Header.Get("Authorization"), "token ", "", 1)
 }
 
 func validateCookie(r *http.Request) bool {

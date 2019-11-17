@@ -21,6 +21,20 @@
         <td>{{t_fmt .Report.DeviceTime "2006/1/2 15:04:05"}}</td>
     </tr>
     <tr>
+        <th>Report Trigger</th>
+        <td>
+            {{if .Report.IsBootTimeReport}}
+                Boot time
+            {{else if .Report.IsSSHConnectedReport}}
+                SSH has been connected
+            {{else if .Report.IsIntervalReport}}
+                Interval timer ({{.Report.Trigger}}min.)
+            {{else}}
+                Unknown
+            {{end}}
+        </td>
+    </tr>
+    <tr>
         <th>Report Sequence Number</th>
         <td>{{.Report.Sequence}}</td>
     </tr>
@@ -134,7 +148,9 @@
         <tr>
             <th>Usage of "{{.Report.DiskMountPoint}}"</th>
             <td>
-                {{b_fmt .Report.DiskUsedBytes}} / {{b_fmt .Report.DiskTotalBytes}} ({{.Report.DiskUsageAsPercentage}})
+                {{.Report.DiskUsedBytes}}B ({{b_fmt .Report.DiskUsedBytes}}) /
+                {{.Report.DiskTotalBytes}}B ({{b_fmt .Report.DiskTotalBytes}})
+                ({{.Report.DiskUsageAsPercentage}})
             </td>
         </tr>
         <tr>
