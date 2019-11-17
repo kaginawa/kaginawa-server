@@ -166,6 +166,30 @@
             <td>{{.Report.DiskLabel}}</td>
         </tr>
     {{end}}
+    {{if .Report.USBDevices}}
+        <tr>
+            <th>USB Devices</th>
+            <td>
+                <ul>
+                    {{range .Report.USBDevices}}
+                        <li>{{.VendorID}}:{{.ProductID}} {{.Name}} ({{.Location}})</li>
+                    {{end}}
+                </ul>
+            </td>
+        </tr>
+    {{end}}
+    {{if .Report.BDLocalDevices}}
+        <tr>
+            <th>Bluetooth Local Devices</th>
+            <td>
+                <ul>
+                    {{range .Report.BDLocalDevices}}
+                        <li>{{.}}</li>
+                    {{end}}
+                </ul>
+            </td>
+        </tr>
+    {{end}}
     <tr>
         <th>Version</th>
         <td>{{.Report.AgentVersion}}</td>

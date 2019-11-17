@@ -64,35 +64,37 @@ func (s SSHServer) Addr() string {
 // Report defines all of Report attributes
 type Report struct {
 	// Kagiwana shared fields
-	ID             string   `json:"id" bson:"id"`                                       // MAC address
-	Trigger        int      `json:"trigger" bson:"trigger"`                             // Report trigger (-1/0/n)
-	Runtime        string   `json:"runtime" bson:"runtime"`                             // OS and arch
-	Success        bool     `json:"success" bson:"success"`                             // Equals len(Errors) == 0
-	Sequence       int      `json:"seq" bson:"seq"`                                     // Report sequence number
-	DeviceTime     int64    `json:"device_time" bson:"device_time"`                     // Device time (UTC)
-	BootTime       int64    `json:"boot_time" bson:"boot_time"`                         // Device boot time (UTC)
-	GenMillis      int64    `json:"gen_ms" bson:"gen_ms"`                               // Generation time milliseconds
-	AgentVersion   string   `json:"agent_version" bson:"agent_version"`                 // Agent version
-	CustomID       string   `json:"custom_id,omitempty" bson:"custom_id"`               // User specified ID
-	SSHServerHost  string   `json:"ssh_server_host,omitempty" bson:"ssh_server_host"`   // Connected SSH server host
-	SSHRemotePort  int      `json:"ssh_remote_port,omitempty" bson:"ssh_remote_port"`   // Connected SSH remote port
-	SSHConnectTime int64    `json:"ssh_connect_time,omitempty" bson:"ssh_connect_time"` // Connected time of the SSH
-	Adapter        string   `json:"adapter,omitempty" bson:"adapter"`                   // Name of network adapter
-	LocalIPv4      string   `json:"ip4_local,omitempty" bson:"ip4_local"`               // Local IPv6 address
-	LocalIPv6      string   `json:"ip6_local,omitempty" bson:"ip6_local"`               // Local IPv6 address
-	Hostname       string   `json:"hostname,omitempty" bson:"hostname"`                 // OS Hostname
-	RTTMills       int64    `json:"rtt_ms,omitempty" bson:"rtt_ms"`                     // Round trip time milliseconds
-	UploadKBPS     int64    `json:"upload_bps,omitempty" bson:"upload_bps"`             // Upload throughput bps
-	DownloadKBPS   int64    `json:"download_bps,omitempty" bson:"download_bps"`         // Download throughput bps
-	DiskTotalBytes int64    `json:"disk_total_bytes,omitempty" bson:"disk_total_bytes"` // Total disk space (Bytes)
-	DiskUsedBytes  int64    `json:"disk_used_bytes,omitempty" bson:"disk_used_bytes"`   // Used disk space (Bytes)
-	DiskLabel      string   `json:"disk_label,omitempty" bson:"disk_label"`             // Disk label
-	DiskFilesystem string   `json:"disk_filesystem,omitempty" bson:"disk_filesystem"`   // Disk filesystem name
-	DiskMountPoint string   `json:"disk_mount_point,omitempty" bson:"disk_mount_point"` // Mount point (default is root)
-	DiskDevice     string   `json:"disk_device,omitempty" bson:"disk_device"`           // Disk device name
-	Errors         []string `json:"errors,omitempty" bson:"errors"`                     // List of errors
-	Payload        string   `json:"payload,omitempty" bson:"payload"`                   // Custom content
-	PayloadCmd     string   `json:"payload_cmd,omitempty" bson:"payload_cmd"`           // Executed payload command
+	ID             string      `json:"id" bson:"id"`                                       // MAC address
+	Trigger        int         `json:"trigger" bson:"trigger"`                             // Report trigger (-1/0/n)
+	Runtime        string      `json:"runtime" bson:"runtime"`                             // OS and arch
+	Success        bool        `json:"success" bson:"success"`                             // Equals len(Errors) == 0
+	Sequence       int         `json:"seq" bson:"seq"`                                     // Report sequence number
+	DeviceTime     int64       `json:"device_time" bson:"device_time"`                     // Device time (UTC)
+	BootTime       int64       `json:"boot_time" bson:"boot_time"`                         // Device boot time (UTC)
+	GenMillis      int64       `json:"gen_ms" bson:"gen_ms"`                               // Generation time millis
+	AgentVersion   string      `json:"agent_version" bson:"agent_version"`                 // Agent version
+	CustomID       string      `json:"custom_id,omitempty" bson:"custom_id"`               // User specified ID
+	SSHServerHost  string      `json:"ssh_server_host,omitempty" bson:"ssh_server_host"`   // Connected SSH server host
+	SSHRemotePort  int         `json:"ssh_remote_port,omitempty" bson:"ssh_remote_port"`   // Connected SSH remote port
+	SSHConnectTime int64       `json:"ssh_connect_time,omitempty" bson:"ssh_connect_time"` // Connected time of the SSH
+	Adapter        string      `json:"adapter,omitempty" bson:"adapter"`                   // Name of network adapter
+	LocalIPv4      string      `json:"ip4_local,omitempty" bson:"ip4_local"`               // Local IPv6 address
+	LocalIPv6      string      `json:"ip6_local,omitempty" bson:"ip6_local"`               // Local IPv6 address
+	Hostname       string      `json:"hostname,omitempty" bson:"hostname"`                 // OS Hostname
+	RTTMills       int64       `json:"rtt_ms,omitempty" bson:"rtt_ms"`                     // Round trip time millis
+	UploadKBPS     int64       `json:"upload_bps,omitempty" bson:"upload_bps"`             // Upload throughput bps
+	DownloadKBPS   int64       `json:"download_bps,omitempty" bson:"download_bps"`         // Download throughput bps
+	DiskTotalBytes int64       `json:"disk_total_bytes,omitempty" bson:"disk_total_bytes"` // Total disk space (Bytes)
+	DiskUsedBytes  int64       `json:"disk_used_bytes,omitempty" bson:"disk_used_bytes"`   // Used disk space (Bytes)
+	DiskLabel      string      `json:"disk_label,omitempty" bson:"disk_label"`             // Disk label
+	DiskFilesystem string      `json:"disk_filesystem,omitempty" bson:"disk_filesystem"`   // Disk filesystem name
+	DiskMountPoint string      `json:"disk_mount_point,omitempty" bson:"disk_mount_point"` // Mount point (default is /)
+	DiskDevice     string      `json:"disk_device,omitempty" bson:"disk_device"`           // Disk device name
+	USBDevices     []USBDevice `json:"usb_devices,omitempty" bson:"usb_devices"`           // List of usb devices
+	BDLocalDevices []string    `json:"bd_local_devices,omitempty" bson:"bd_local_devices"` // List of BT local devices
+	Errors         []string    `json:"errors,omitempty" bson:"errors"`                     // List of errors
+	Payload        string      `json:"payload,omitempty" bson:"payload"`                   // Custom content
+	PayloadCmd     string      `json:"payload_cmd,omitempty" bson:"payload_cmd"`           // Executed payload command
 
 	// Server-side injected fields
 	GlobalIP   string `json:"ip_global" bson:"ip_global"`     // Global IP address
@@ -132,4 +134,12 @@ func (r Report) IsSSHConnectedReport() bool {
 // IsIntervalReport checks report triggered by interval timer or not.
 func (r Report) IsIntervalReport() bool {
 	return r.Trigger > 0
+}
+
+// USBDevice defines usb device information
+type USBDevice struct {
+	Name      string `json:"name,omitempty" bson:"name"`
+	VendorID  string `json:"vendor_id,omitempty" bson:"vendor_id"`
+	ProductID string `json:"product_id,omitempty" bson:"product_id"`
+	Location  string `json:"location,omitempty" bson:"location"`
 }
