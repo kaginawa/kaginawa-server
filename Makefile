@@ -17,6 +17,17 @@ lint: ## Runs static code analysis
 run: ## Run web application locally
 	GO111MODULE=on go run cmd/server/*.go
 
+.PHONY: docker-build
+docker-build: ## Build a docker image
+	docker build -t kaginawa/kaginawa-server .
+
+.PHONY: docker-run
+docker-run: ## Run a builded docker image using "docker-env.txt" (list of KEY=VALUE)
+	if test -e docker-env.txt; \
+	then docker run --env-file=docker-env.txt -p 8080:80 -t kaginawa/kaginawa-server; \
+	else docker run -p 8080:80 -t kaginawa/kaginawa-server; \
+	fi
+
 .PHONY: count-go
 count-go: ## Count number of lines of all go codes
 	find . -name "*.go" -type f | xargs wc -l | tail -n 1
