@@ -79,7 +79,7 @@ func handleCommand(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get record
-	report, err := database.GetReportByID(id)
+	report, err := db.GetReportByID(id)
 	if err != nil {
 		log.Printf("failed to get report %s: %v", id, err)
 		http.Error(w, "Database unavailable", http.StatusInternalServerError)
@@ -91,7 +91,7 @@ func handleCommand(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Get ssh server information
-	servers, err := database.ListSSHServers()
+	servers, err := db.ListSSHServers()
 	if err != nil {
 		log.Printf("failed to list ssh servers: %v", err)
 		http.Error(w, "Database unavailable", http.StatusInternalServerError)

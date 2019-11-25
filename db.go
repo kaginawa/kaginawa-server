@@ -3,6 +3,7 @@ package kaginawa
 import (
 	"fmt"
 	"sync"
+	"time"
 )
 
 var (
@@ -63,7 +64,7 @@ func (s SSHServer) Addr() string {
 
 // Report defines all of Report attributes
 type Report struct {
-	// Kagiwana shared fields
+	// Kaginawa shared fields
 	ID             string      `json:"id" bson:"id"`                                       // MAC address
 	Trigger        int         `json:"trigger" bson:"trigger"`                             // Report trigger (-1/0/n)
 	Runtime        string      `json:"runtime" bson:"runtime"`                             // OS and arch
@@ -97,10 +98,11 @@ type Report struct {
 	PayloadCmd     string      `json:"payload_cmd,omitempty" bson:"payload_cmd"`           // Executed payload command
 
 	// Server-side injected fields
-	GlobalIP   string `json:"ip_global" bson:"ip_global"`     // Global IP address
-	GlobalHost string `json:"host_global" bson:"host_global"` // Reverse lookup result for global IP address
-	ServerTime int64  `json:"server_time" bson:"server_time"` // Server-side consumed UTC time
-	APIKey     string `json:"api_key" bson:"api_key"`         // Used api key
+	GlobalIP   string    `json:"ip_global" bson:"ip_global"`        // Global IP address
+	GlobalHost string    `json:"host_global" bson:"host_global"`    // Reverse lookup result for global IP address
+	ServerTime int64     `json:"server_time" bson:"server_time"`    // Server-side consumed UTC time
+	APIKey     string    `json:"api_key" bson:"api_key"`            // Used api key
+	TTL        time.Time `json:"-" bson:"-" dynamodbav:",unixtime"` // DynamoDB TTL
 }
 
 // DownloadMBPS formats download throughput as Mbps.

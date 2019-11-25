@@ -13,7 +13,7 @@ func validateAPIKey(r *http.Request, admin bool) bool {
 		return false
 	}
 	if admin {
-		if ok, _, err := database.ValidateAdminAPIKey(apiKey); !ok {
+		if ok, _, err := db.ValidateAdminAPIKey(apiKey); !ok {
 			if err != nil {
 				log.Printf("failed to validate admin api key: %v", err)
 				return false
@@ -23,7 +23,7 @@ func validateAPIKey(r *http.Request, admin bool) bool {
 			}
 		}
 	} else {
-		if ok, _, err := database.ValidateAPIKey(apiKey); !ok {
+		if ok, _, err := db.ValidateAPIKey(apiKey); !ok {
 			if err != nil {
 				log.Printf("failed to validate api key: %v", err)
 				return false
