@@ -98,12 +98,12 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Password is empty", http.StatusBadRequest)
 			return
 		}
-		if u != loginUser.Username() {
+		if u != loginUser {
 			log.Printf("Invalid login attempt %s:%s", u, p)
 			http.Error(w, "Invalid user or password", http.StatusUnauthorized)
 			return
 		}
-		if pw, _ := loginUser.Password(); p != pw {
+		if p != loginPassword {
 			log.Printf("Invalid login attempt %s:%s", u, p)
 			http.Error(w, "Invalid user or password", http.StatusUnauthorized)
 			return
@@ -140,13 +140,13 @@ func handleNodesWeb(w http.ResponseWriter, r *http.Request) {
 	}
 	var mem runtime.MemStats
 	runtime.ReadMemStats(&mem)
-	count, err := database.CountReports()
+	count, err := db.CountReports()
 	if err != nil {
 		log.Printf("failed to count reports: %v", err)
 		http.Error(w, "Database unavailable", http.StatusInternalServerError)
 		return
 	}
-	reports, err := database.ListReports(0, count)
+	reports, err := db.ListReports(0, count)
 	if err != nil {
 		log.Printf("failed to list reports: %v", err)
 		http.Error(w, "Database unavailable", http.StatusInternalServerError)
@@ -173,7 +173,7 @@ func handleNodesAPI(w http.ResponseWriter, r *http.Request) {
 	customID := r.URL.Query().Get("custom-id")
 	var reports []kaginawa.Report
 	if len(customID) > 0 {
-		records, err := database.GetReportByCustomID(customID)
+		records, err := db.GetReportByCustomID(customID)
 		if err != nil {
 			log.Printf("failed to list reports: %v", err)
 			http.Error(w, "Database unavailable", http.StatusInternalServerError)
@@ -181,13 +181,13 @@ func handleNodesAPI(w http.ResponseWriter, r *http.Request) {
 		}
 		reports = records
 	} else {
-		count, err := database.CountReports()
+		count, err := db.CountReports()
 		if err != nil {
 			log.Printf("failed to count reports: %v", err)
 			http.Error(w, "Database unavailable", http.StatusInternalServerError)
 			return
 		}
-		records, err := database.ListReports(0, count)
+		records, err := db.ListReports(0, count)
 		if err != nil {
 			log.Printf("failed to list reports: %v", err)
 			http.Error(w, "Database unavailable", http.StatusInternalServerError)
@@ -231,7 +231,7 @@ func handleNodeWeb(w http.ResponseWriter, r *http.Request, id, user, password, r
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
-	rep, err := database.GetReportByID(id)
+	rep, err := db.GetReportByID(id)
 	if err != nil {
 		log.Printf("failed to get Report (id=%s): %v", id, err)
 		http.Error(w, "Database unavailable", http.StatusInternalServerError)
@@ -260,7 +260,7 @@ func handleNodeAPI(w http.ResponseWriter, r *http.Request, id string) {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
-	record, err := database.GetReportByID(id)
+	record, err := db.GetReportByID(id)
 	if err != nil {
 		log.Printf("failed to get report: %v", err)
 		http.Error(w, "Database unavailable", http.StatusInternalServerError)
@@ -290,13 +290,13 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
-	keys, err := database.ListAPIKeys()
+	keys, err := db.ListAPIKeys()
 	if err != nil {
 		log.Printf("failed to list api keys: %v", err)
 		http.Error(w, "Database unavailable", http.StatusInternalServerError)
 		return
 	}
-	servers, err := database.ListSSHServers()
+	servers, err := db.ListSSHServers()
 	if err != nil {
 		log.Printf("failed to list ssh servers: %v", err)
 		http.Error(w, "Database unavailable", http.StatusInternalServerError)
@@ -332,7 +332,7 @@ func handleNewAPIKey(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Key is empty", http.StatusBadRequest)
 		return
 	}
-	if err := database.PutAPIKey(kaginawa.APIKey{Key: k, Label: l, Admin: a}); err != nil {
+	if err := db.PutAPIKey(kaginawa.APIKey{Key: k, Label: l, Admin: a}); err != nil {
 		log.Printf("failed to put api key: %v", err)
 		http.Error(w, "Database unavailable", http.StatusInternalServerError)
 		return
@@ -376,7 +376,7 @@ func handleNewSSHServer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Key or password is empty", http.StatusBadRequest)
 		return
 	}
-	if err := database.PutSSHServer(kaginawa.SSHServer{Host: h, Port: port, User: u, Key: k, Password: pw}); err != nil {
+	if err := db.PutSSHServer(kaginawa.SSHServer{Host: h, Port: port, User: u, Key: k, Password: pw}); err != nil {
 		log.Printf("failed to put ssh server: %v", err)
 		http.Error(w, "Database unavailable", http.StatusInternalServerError)
 		return

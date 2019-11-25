@@ -70,7 +70,7 @@ func handleReport(w http.ResponseWriter, r *http.Request) {
 		report.GlobalHost = report.GlobalIP
 	}
 
-	if err := database.PutReport(report); err != nil {
+	if err := db.PutReport(report); err != nil {
 		log.Printf("failed to put Report (id=%s): %v", report.ID, err)
 		http.Error(w, "Failed to put database", http.StatusInternalServerError)
 		return

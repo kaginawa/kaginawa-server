@@ -4,7 +4,6 @@ import (
 	"io"
 	"log"
 	"net/http"
-	"net/url"
 	"os"
 
 	"github.com/gorilla/mux"
@@ -15,28 +14,35 @@ import (
 const defaultPort = "8080"
 
 var (
-	database   kaginawa.DB
-	loginUser  *url.Userinfo
-	loginToken [32]byte
+	db            kaginawa.DB
+	loginUser     string
+	loginPassword string
+	loginToken    [32]byte
 )
 
 func main() {
+	loginUser = os.Getenv("LOGIN_USER")
+	loginPassword = os.Getenv("LOGIN_PASSWORD")
+	loginToken = sha3.Sum256([]byte(loginUser))
+
 	// Initialize database
-	ep := os.Getenv("MONGODB_URI")
-	if len(ep) == 0 {
+	mongoURI := os.Getenv("MONGODB_URI")
+	dynamoKeys := os.Getenv("DYNAMO_KEYS")
+	if len(mongoURI) > 0 {
+		mongoDB, err := kaginawa.NewMongoDB(mongoURI)
+		if err != nil {
+			log.Fatalf("failed to initialize database: %v", err)
+		}
+		db = mongoDB
+	} else if len(dynamoKeys) > 0 {
+		dynamoDB, err := kaginawa.NewDynamoDB()
+		if err != nil {
+			log.Fatalf("failed to initialize database: %v", err)
+		}
+		db = dynamoDB
+	} else {
 		log.Fatalf("Database not configured!")
 	}
-	parsed, err := url.Parse(ep)
-	if err != nil {
-		log.Fatalf("invalid MONGODB_URI: %s", ep)
-	}
-	loginUser = parsed.User
-	loginToken = sha3.Sum256([]byte(loginUser.Username()))
-	db, err := kaginawa.NewMongoDB(ep)
-	if err != nil {
-		log.Fatalf("failed to initialize database: %v", err)
-	}
-	database = db
 
 	// Load api keys
 	apiKeys, err := db.ListAPIKeys()

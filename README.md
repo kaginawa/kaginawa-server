@@ -13,6 +13,15 @@ See [kaginawa](https://github.com/kaginawa/kaginawa) repository for more details
 
 ## Requirements
 
+### General
+
+Environment variables:
+
+- `LOGIN_USER`: Web interface username
+- `LOGIN_PASSWORD`: Web interface password
+
+### Using MongoDB
+
 Environment variables:
 
 - `MONGODB_URI`: MongoDB endpoint (`mongodb://user:pass@host:port/db`)
@@ -25,6 +34,71 @@ Kaginawa Server automatically creates following collections when first touch:
 - `logs` - All received reports
 
 We recommend creating `logs` collection as a [capped collection](https://docs.mongodb.com/manual/core/capped-collections/).
+
+### Using DynamoDB
+
+Environment variables:
+
+- `DYNAMO_KEYS`: Name of table of keys (e.g. `KaginawaKeys`)
+- `DYNAMO_SERVERS`: Name of table of servers (e.g. `KaginawaServers`)
+- `DYNAMO_NODES`: Name of table of nodes (e.g. `KaginawaNodes`)
+- `DYNAMO_LOGS`: Name of table of logs (e.g. `KaginawaLogs`)
+- `DYNAMO_CUSTOM_IDS`: Name of index of custom id (e.g. `CustomID-index`)
+- `DYNAMO_TTL_DAYS`: (Optional) TTL for table of logs 
+- `DYNAMO_ENDPOINT`: (Optional) Custom endpoint (i.e. using DynamoDB Local)
+
+Create table of keys using aws-cli:
+
+```
+aws dynamodb create-table \
+    --table-name KaginawaKeys \
+    --attribute-definitions AttributeName=Key,AttributeType=S \
+    --key-schema AttributeName=Key,KeyType=HASH \
+    --provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1
+```
+
+Create table of servers using aws-cli:
+
+```
+aws dynamodb create-table \
+    --table-name KaginawaServers \
+    --attribute-definitions AttributeName=Host,AttributeType=S \
+    --key-schema AttributeName=Host,KeyType=HASH \
+    --provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1
+```
+
+Create table of nodes using aws-cli:
+
+```
+aws dynamodb create-table \
+    --table-name KaginawaNodes \
+    --attribute-definitions AttributeName=ID,AttributeType=S \
+    --key-schema AttributeName=ID,KeyType=HASH \
+    --provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1
+```
+
+Create table of logs using aws-cli:
+
+```
+aws dynamodb create-table \
+    --table-name KaginawaLogs \
+    --attribute-definitions \
+        AttributeName=ID,AttributeType=S \
+        AttributeName=ServerTime,AttributeType=N \
+    --key-schema AttributeName=ID,KeyType=HASH AttributeName=ServerTime,KeyType=RANGE \
+    --provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1
+```
+
+Create index of custom ID for table of nodes using aws-cli:
+
+```
+aws dynamodb update-table \
+    --table-name KaginawaNodes \
+    --attribute-definitions AttributeName=CustomID,AttributeType=S \
+    --global-secondary-index-updates \
+    "[{\"Create\":{\"IndexName\": \"CustomID-index\",\"KeySchema\":[{\"AttributeName\":\"CustomID\",\"KeyType\":\"HASH\"}], \
+    \"ProvisionedThroughput\": {\"ReadCapacityUnits\": 1, \"WriteCapacityUnits\": 1},\"Projection\":{\"ProjectionType\":\"ALL\"}}}]" 
+```
 
 ## Admin API
 
