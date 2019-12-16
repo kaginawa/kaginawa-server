@@ -222,31 +222,39 @@ func (db DynamoDB) PutReport(report Report) error {
 }
 
 // CountReports counts number of reports.
-func (db DynamoDB) CountReports() (int64, error) {
+func (db DynamoDB) CountReports() (int, error) {
 	projection := expression.NamesList(expression.Name("ID"))
 	expr, err := expression.NewBuilder().WithProjection(projection).Build()
 	if err != nil {
 		return 0, fmt.Errorf("failed to build projection expression: %w", err)
 	}
-	var count int64
+	var count int
 	err = db.instance.ScanPages(&dynamodb.ScanInput{
 		TableName:                aws.String(db.nodesTable),
 		ProjectionExpression:     expr.Projection(),
 		ExpressionAttributeNames: expr.Names(),
 	}, func(output *dynamodb.ScanOutput, lastPage bool) bool {
-		count += int64(len(output.Items))
+		count += len(output.Items)
 		return !lastPage
 	})
 	return count, err
 }
 
 // ListReports scans all reports.
-func (db DynamoDB) ListReports(skip, limit int64) ([]Report, error) {
+func (db DynamoDB) ListReports(skip, limit int) ([]Report, error) {
 	var records []Report
+	var count int
 	if err := db.instance.ScanPages(&dynamodb.ScanInput{
 		TableName: aws.String(db.nodesTable),
 	}, func(output *dynamodb.ScanOutput, lastPage bool) bool {
 		for _, item := range output.Items {
+			count++
+			if count <= skip {
+				continue
+			}
+			if len(records) >= limit {
+				return false
+			}
 			var record Report
 			if err := db.decoder.Decode(&dynamodb.AttributeValue{M: item}, &record); err != nil {
 				log.Printf("skipping error item: %v", err)
