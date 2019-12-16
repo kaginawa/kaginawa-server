@@ -32,9 +32,9 @@ type DB interface {
 	// PutReport puts a report.
 	PutReport(report Report) error
 	// CountReports counts number of reports.
-	CountReports() (int64, error)
+	CountReports() (int, error)
 	// ListReports scans all reports.
-	ListReports(skip, limit int64) ([]Report, error)
+	ListReports(skip, limit int) ([]Report, error)
 	// GetReportByID queries a report by id.
 	GetReportByID(id string) (*Report, error)
 	// GetReportByCustomID queries a report by custom id.

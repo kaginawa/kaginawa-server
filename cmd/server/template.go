@@ -138,6 +138,9 @@ func handleNodesWeb(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
+	page := page(r)
+	limit := limit(r)
+	offset := (page - 1) * limit
 	var mem runtime.MemStats
 	runtime.ReadMemStats(&mem)
 	count, err := db.CountReports()
@@ -146,18 +149,20 @@ func handleNodesWeb(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Database unavailable", http.StatusInternalServerError)
 		return
 	}
-	reports, err := db.ListReports(0, count)
+	reports, err := db.ListReports(offset, offset+limit)
 	if err != nil {
 		log.Printf("failed to list reports: %v", err)
 		http.Error(w, "Database unavailable", http.StatusInternalServerError)
 		return
 	}
 	execTemplate(w, "nodes", struct {
+		Pager         Pager
 		Reports       []kaginawa.Report
 		GoVersion     string
 		NumGoroutines int
 		MemStats      runtime.MemStats
 	}{
+		newPager(count, len(reports), page, limit, r.URL.Query()),
 		reports,
 		runtime.Version(),
 		runtime.NumGoroutine(),

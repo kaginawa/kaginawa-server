@@ -183,13 +183,14 @@ func (db MongoDB) PutReport(report Report) error {
 }
 
 // CountReports counts number of records in node table.
-func (db MongoDB) CountReports() (int64, error) {
-	return db.instance.Collection(nodeCollection).CountDocuments(context.Background(), bson.D{})
+func (db MongoDB) CountReports() (int, error) {
+	n, err := db.instance.Collection(nodeCollection).CountDocuments(context.Background(), bson.D{})
+	return int(n), err
 }
 
 // ListReports implements same signature of the DB interface.
-func (db MongoDB) ListReports(skip, limit int64) ([]Report, error) {
-	opts := &options.FindOptions{Sort: bson.M{"hostname": 1}, Skip: &skip, Limit: &limit}
+func (db MongoDB) ListReports(skip, limit int) ([]Report, error) {
+	opts := &options.FindOptions{Sort: bson.M{"custom_id": 1}, Skip: int64p(skip), Limit: int64p(limit)}
 	cur, err := db.instance.Collection(nodeCollection).Find(context.Background(), bson.D{}, opts)
 	if err != nil {
 		return nil, err
@@ -247,4 +248,9 @@ func (db MongoDB) GetReportByCustomID(customID string) ([]Report, error) {
 		reports = append(reports, result)
 	}
 	return reports, nil
+}
+
+func int64p(n int) *int64 {
+	n64 := int64(n)
+	return &n64
 }

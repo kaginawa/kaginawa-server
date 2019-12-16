@@ -34,7 +34,7 @@
                 <td class="{{if $alive}}state-ok{{else}}state-old{{end}}">
                     {{t_fmt .ServerTime "2006/1/2 15:04:05"}}
                 </td>
-                <td>{{.SSHServerHost}} {{.SSHRemotePort}}</td>
+                <td>{{if .SSHRemotePort}}{{.SSHServerHost}} {{.SSHRemotePort}}{{else}}N/A{{end}}</td>
                 <td>{{if .GlobalHost}}{{.GlobalHost}}{{else}}{{.GlobalIP}}{{end}}</td>
                 <td>{{.LocalIPv4}}</td>
                 <td>{{.Sequence}}</td>
@@ -45,14 +45,46 @@
                             {{if eq (len .Errors) 1}}1 error{{else}}{{len .Errors}} errors{{end}}
                         </span>
                     {{else}}
-                        <span class="state-ok">OK</span>
+                        <span class="{{if $alive}}state-ok{{end}}">OK</span>
                     {{end}}
                 </td>
             </tr>
         {{end}}
         </tbody>
     </table>
-    Total: {{len .Reports}}
+    <div>Showing {{.Pager.Head}} to {{.Pager.Tail}}, Total {{.Pager.Total}}</div>
+    <div>
+        {{if eq .Pager.Current 1}}
+            <button disabled>Prev</button>
+        {{else}}
+            <form method="get" action="">
+                {{range $k, $vs := .Pager.Queries}}
+                    {{if ne $k "page"}}
+                        {{range $vs}}
+                            <input type="hidden" name="{{$k}}" value="{{.}}"/>
+                        {{end}}
+                    {{end}}
+                {{end}}
+                <input type="hidden" name="page" value="{{.Pager.Prev}}"/>
+                <button>Prev</button>
+            </form>
+        {{end}}
+        {{if eq .Pager.Total .Pager.Tail}}
+            <button disabled>Next</button>
+        {{else}}
+            <form method="get" action="">
+                {{range $k, $vs := .Pager.Queries}}
+                    {{if ne $k "page"}}
+                        {{range $vs}}
+                            <input type="hidden" name="{{$k}}" value="{{.}}"/>
+                        {{end}}
+                    {{end}}
+                {{end}}
+                <input type="hidden" name="page" value="{{.Pager.Next}}"/>
+                <button>Next</button>
+            </form>
+        {{end}}
+    </div>
 {{else}}
     <p>WARNING: No reports found.</p>
 {{end}}
