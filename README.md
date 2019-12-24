@@ -11,6 +11,8 @@ Kaginawa server program.
 
 See [kaginawa](https://github.com/kaginawa/kaginawa) repository for more details.
 
+Docker image is available at [Docker Hub](https://hub.docker.com/r/kaginawa/kaginawa-server).
+
 ## Requirements
 
 ### General
