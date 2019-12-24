@@ -15,6 +15,18 @@ var (
 	SSHServers []SSHServer
 )
 
+// Projection defines parameter patterns of projection attributes
+type Projection int
+
+const (
+	// AllAttributes defines projection pattern of all attributes
+	AllAttributes Projection = iota
+	// IDAttributes defines projection pattern of ID attributes
+	IDAttributes
+	// ListViewAttributes defines projection pattern of list page attributes
+	ListViewAttributes
+)
+
 // DB implements database operations.
 type DB interface {
 	// ValidateAPIKey validates API key. Results are ok, label and error.
@@ -34,11 +46,11 @@ type DB interface {
 	// CountReports counts number of reports.
 	CountReports() (int, error)
 	// ListReports scans all reports.
-	ListReports(skip, limit int) ([]Report, error)
+	ListReports(skip, limit, minutes int, projection Projection) ([]Report, error)
 	// GetReportByID queries a report by id.
 	GetReportByID(id string) (*Report, error)
-	// GetReportByCustomID queries a report by custom id.
-	GetReportByCustomID(customID string) ([]Report, error)
+	// ListReportsByCustomID queries list of reports by custom id.
+	ListReportsByCustomID(customID string, minutes int, projection Projection) ([]Report, error)
 }
 
 // APIKey defines database item of an api key.
@@ -66,14 +78,14 @@ func (s SSHServer) Addr() string {
 type Report struct {
 	// Kaginawa shared fields
 	ID             string      `json:"id" bson:"id"`                                       // MAC address
-	Trigger        int         `json:"trigger" bson:"trigger"`                             // Report trigger (-1/0/n)
-	Runtime        string      `json:"runtime" bson:"runtime"`                             // OS and arch
+	Trigger        int         `json:"trigger,omitempty" bson:"trigger"`                   // Report trigger (-1/0/n)
+	Runtime        string      `json:"runtime,omitempty" bson:"runtime"`                   // OS and arch
 	Success        bool        `json:"success" bson:"success"`                             // Equals len(Errors) == 0
-	Sequence       int         `json:"seq" bson:"seq"`                                     // Report sequence number
-	DeviceTime     int64       `json:"device_time" bson:"device_time"`                     // Device time (UTC)
-	BootTime       int64       `json:"boot_time" bson:"boot_time"`                         // Device boot time (UTC)
-	GenMillis      int64       `json:"gen_ms" bson:"gen_ms"`                               // Generation time millis
-	AgentVersion   string      `json:"agent_version" bson:"agent_version"`                 // Agent version
+	Sequence       int         `json:"seq,omitempty" bson:"seq"`                           // Report sequence number
+	DeviceTime     int64       `json:"device_time,omitempty" bson:"device_time"`           // Device time (UTC)
+	BootTime       int64       `json:"boot_time,omitempty" bson:"boot_time"`               // Device boot time (UTC)
+	GenMillis      int64       `json:"gen_ms,omitempty" bson:"gen_ms"`                     // Generation time millis
+	AgentVersion   string      `json:"agent_version,omitempty" bson:"agent_version"`       // Agent version
 	CustomID       string      `json:"custom_id,omitempty" bson:"custom_id"`               // User specified ID
 	SSHServerHost  string      `json:"ssh_server_host,omitempty" bson:"ssh_server_host"`   // Connected SSH server host
 	SSHRemotePort  int         `json:"ssh_remote_port,omitempty" bson:"ssh_remote_port"`   // Connected SSH remote port
@@ -98,11 +110,11 @@ type Report struct {
 	PayloadCmd     string      `json:"payload_cmd,omitempty" bson:"payload_cmd"`           // Executed payload command
 
 	// Server-side injected fields
-	GlobalIP   string    `json:"ip_global" bson:"ip_global"`        // Global IP address
-	GlobalHost string    `json:"host_global" bson:"host_global"`    // Reverse lookup result for global IP address
-	ServerTime int64     `json:"server_time" bson:"server_time"`    // Server-side consumed UTC time
-	APIKey     string    `json:"api_key" bson:"api_key"`            // Used api key
-	TTL        time.Time `json:"-" bson:"-" dynamodbav:",unixtime"` // DynamoDB TTL
+	GlobalIP   string    `json:"ip_global,omitempty" bson:"ip_global"`     // Global IP address
+	GlobalHost string    `json:"host_global,omitempty" bson:"host_global"` // Reverse lookup result for global IP address
+	ServerTime int64     `json:"server_time" bson:"server_time"`           // Server-side consumed UTC time
+	APIKey     string    `json:"api_key,omitempty" bson:"api_key"`         // Used api key
+	TTL        time.Time `json:"-" bson:"-" dynamodbav:",unixtime"`        // DynamoDB TTL
 }
 
 // DownloadMBPS formats download throughput as Mbps.
