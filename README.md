@@ -11,6 +11,8 @@ Kaginawa server program.
 
 See [kaginawa](https://github.com/kaginawa/kaginawa) repository for more details.
 
+Docker image is available at [Docker Hub](https://hub.docker.com/r/kaginawa/kaginawa-server).
+
 ## Requirements
 
 ### General
@@ -36,6 +38,9 @@ Kaginawa Server automatically creates following collections when first touch:
 We recommend creating `logs` collection as a [capped collection](https://docs.mongodb.com/manual/core/capped-collections/).
 
 ### Using DynamoDB
+
+Kaginawa server uses AWS default credentials.
+See the comment of [AWS SDK for Go API Reference](https://docs.aws.amazon.com/sdk-for-go/api/aws/session/#NewSession) for more details.
 
 Environment variables:
 
@@ -102,39 +107,43 @@ aws dynamodb update-table \
 
 ## Admin API
 
-### List all nodes
+### List nodes
 
 - Method: `GET`
 - Resource: `/nodes`
+- Query Params:
+    - (Optional) `custom-id` - filter by custom-id
+    - (Optional) `minutes` - filter by minutes ago
+    - (Optional) `projection` - pattern of projection attributes (`all`, `id` or `list-view`)
 - Headers:
     - `Authorization: token <admin_api_key>`
     - `Accept: application/json`
 - Response: List of all `Record` object (see [db.go](db.go) definition)
 
-Curl example:
+Curl example with no query params:
 
 ```
-curl -H "Authorization: token admin123" -H "Accept: application/json" -X GET "http://localhost:8080/nodes/02:00:17:00:7d:b0"
+curl -H "Authorization: token admin123" -H "Accept: application/json" -X GET "http://localhost:8080/nodes"
 ```
 
-### Get node by custom ID
-
-- Request: `GET `
-- Resource: `/nodes`
-- Query Params:
-    - (Optional) `custom-id`
-- Headers:
-    - `Authorization: token <admin_api_key>`
-    - `Accept: application/json`
-- Response: List of matched `Record` object (see [db.go](db.go) definition)
-
-This API can return multiple records. 
-Custom IDs are expected to be unique, but can be duplicated (such as device replacements).
-
-Curl example:
+Curl example with `custom-id`:
 
 ```
 curl -H "Authorization: token admin123" -H "Accept: application/json" -X GET "http://localhost:8080/nodes?custom-id=dev1"
+```
+
+NOTE: Custom IDs are expected to be unique, but can be duplicated (such as device replacements).
+
+Curl example with `custom-id` and `minutes`:
+
+```
+curl -H "Authorization: token admin123" -H "Accept: application/json" -X GET "http://localhost:8080/nodes?custom-id=dev1&minutes=5"
+```
+
+Curl example with `minutes` and `projection`:
+
+```
+curl -H "Authorization: token admin123" -H "Accept: application/json" -X GET "http://localhost:8080/nodes?minutes=5&projection=id"
 ```
 
 ### Get node by ID

@@ -17,6 +17,30 @@ import (
 
 const customIDPlaceholder = "-"
 
+var (
+	idAttributesExpression = expression.NamesList(
+		expression.Name("ID"),
+		expression.Name("CustomID"),
+		expression.Name("ServerTime"),
+		expression.Name("Success"),
+	)
+	listViewAttributesExpression = expression.NamesList(
+		expression.Name("ID"),
+		expression.Name("CustomID"),
+		expression.Name("Hostname"),
+		expression.Name("ServerTime"),
+		expression.Name("SSHServerHost"),
+		expression.Name("SSHRemotePort"),
+		expression.Name("GlobalIP"),
+		expression.Name("GlobalHost"),
+		expression.Name("LocalIPv4"),
+		expression.Name("Sequence"),
+		expression.Name("AgentVersion"),
+		expression.Name("Success"),
+		expression.Name("Errors"),
+	)
+)
+
 // DynamoDB implements DB interface.
 type DynamoDB struct {
 	instance      *dynamodb.DynamoDB
@@ -78,7 +102,7 @@ func NewDynamoDB() (*DynamoDB, error) {
 	return db, nil
 }
 
-// ValidateAPIKey validates API key. Results are ok, label and error.
+// ValidateAPIKey implements same signature of the DB interface.
 func (db DynamoDB) ValidateAPIKey(key string) (bool, string, error) {
 	// Check cache first
 	if v, ok := KnownAPIKeys.Load(key); ok {
@@ -104,7 +128,7 @@ func (db DynamoDB) ValidateAPIKey(key string) (bool, string, error) {
 	return true, apiKey.Label, nil
 }
 
-// ValidateAdminAPIKey validates API key for admin privilege only. Results are ok, label and error.
+// ValidateAdminAPIKey implements same signature of the DB interface.
 func (db DynamoDB) ValidateAdminAPIKey(key string) (bool, string, error) {
 	// Check cache first
 	if v, ok := KnownAdminAPIKeys.Load(key); ok {
@@ -133,7 +157,7 @@ func (db DynamoDB) ValidateAdminAPIKey(key string) (bool, string, error) {
 	return true, apiKey.Label, nil
 }
 
-// ListAPIKeys scans all api keys.
+// ListAPIKeys implements same signature of the DB interface.
 func (db DynamoDB) ListAPIKeys() ([]APIKey, error) {
 	var records []APIKey
 	if err := db.instance.ScanPages(&dynamodb.ScanInput{
@@ -158,7 +182,7 @@ func (db DynamoDB) ListAPIKeys() ([]APIKey, error) {
 	return records, nil
 }
 
-// PutAPIKey puts an api key.
+// PutAPIKey implements same signature of the DB interface.
 func (db DynamoDB) PutAPIKey(apiKey APIKey) error {
 	item, err := db.encoder.Encode(apiKey)
 	if err != nil {
@@ -168,7 +192,7 @@ func (db DynamoDB) PutAPIKey(apiKey APIKey) error {
 	return err
 }
 
-// ListSSHServers scans all ssh servers.
+// ListSSHServers implements same signature of the DB interface.
 func (db DynamoDB) ListSSHServers() ([]SSHServer, error) {
 	var records []SSHServer
 	if err := db.instance.ScanPages(&dynamodb.ScanInput{
@@ -190,7 +214,7 @@ func (db DynamoDB) ListSSHServers() ([]SSHServer, error) {
 	return records, nil
 }
 
-// PutSSHServer puts a ssh server entry.
+// PutSSHServer implements same signature of the DB interface.
 func (db DynamoDB) PutSSHServer(server SSHServer) error {
 	item, err := db.encoder.Encode(server)
 	if err != nil {
@@ -200,7 +224,7 @@ func (db DynamoDB) PutSSHServer(server SSHServer) error {
 	return err
 }
 
-// PutReport puts a report.
+// PutReport implements same signature of the DB interface.
 func (db DynamoDB) PutReport(report Report) error {
 	if len(report.CustomID) == 0 {
 		report.CustomID = customIDPlaceholder
@@ -221,31 +245,46 @@ func (db DynamoDB) PutReport(report Report) error {
 	return err
 }
 
-// CountReports counts number of reports.
+// CountReports implements same signature of the DB interface.
 func (db DynamoDB) CountReports() (int, error) {
-	projection := expression.NamesList(expression.Name("ID"))
-	expr, err := expression.NewBuilder().WithProjection(projection).Build()
-	if err != nil {
-		return 0, fmt.Errorf("failed to build projection expression: %w", err)
-	}
 	var count int
-	err = db.instance.ScanPages(&dynamodb.ScanInput{
-		TableName:                aws.String(db.nodesTable),
-		ProjectionExpression:     expr.Projection(),
-		ExpressionAttributeNames: expr.Names(),
+	err := db.instance.ScanPages(&dynamodb.ScanInput{
+		TableName: aws.String(db.nodesTable),
+		Select:    aws.String(dynamodb.SelectCount),
 	}, func(output *dynamodb.ScanOutput, lastPage bool) bool {
-		count += len(output.Items)
+		count += int(*output.Count)
 		return !lastPage
 	})
 	return count, err
 }
 
-// ListReports scans all reports.
-func (db DynamoDB) ListReports(skip, limit int) ([]Report, error) {
+// ListReports implements same signature of the DB interface.
+func (db DynamoDB) ListReports(skip, limit, minutes int, projection Projection) ([]Report, error) {
+	builder := expression.NewBuilder()
+	if minutes > 0 {
+		timestamp := time.Now().UTC().Add(-time.Duration(minutes) * time.Minute)
+		builder = builder.WithFilter(expression.Name("ServerTime").GreaterThanEqual(expression.Value(timestamp.Unix())))
+	} else {
+		builder = builder.WithFilter(expression.Name("ServerTime").GreaterThan(expression.Value(1)))
+	}
+	switch projection {
+	case IDAttributes:
+		builder = builder.WithProjection(idAttributesExpression)
+	case ListViewAttributes:
+		builder = builder.WithProjection(listViewAttributesExpression)
+	}
+	expr, err := builder.Build()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build expression: %w", err)
+	}
 	var records []Report
 	var count int
 	if err := db.instance.ScanPages(&dynamodb.ScanInput{
-		TableName: aws.String(db.nodesTable),
+		TableName:                 aws.String(db.nodesTable),
+		FilterExpression:          expr.Filter(),
+		ProjectionExpression:      expr.Projection(),
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
 	}, func(output *dynamodb.ScanOutput, lastPage bool) bool {
 		for _, item := range output.Items {
 			count++
@@ -269,7 +308,7 @@ func (db DynamoDB) ListReports(skip, limit int) ([]Report, error) {
 	return records, nil
 }
 
-// GetReportByID queries a report by id.
+// GetReportByID implements same signature of the DB interface.
 func (db DynamoDB) GetReportByID(id string) (*Report, error) {
 	hash, err := dynamodbattribute.MarshalMap(struct{ ID string }{id})
 	if err != nil {
@@ -286,21 +325,37 @@ func (db DynamoDB) GetReportByID(id string) (*Report, error) {
 	return &report, nil
 }
 
-// GetReportByCustomID queries a report by custom id.
-func (db DynamoDB) GetReportByCustomID(customID string) ([]Report, error) {
+// ListReportsByCustomID implements same signature of the DB interface.
+func (db DynamoDB) ListReportsByCustomID(customID string, minutes int, projection Projection) ([]Report, error) {
 	if len(customID) == 0 {
 		customID = customIDPlaceholder
 	}
-	keyCondition := expression.Key("CustomID").Equal(expression.Value(customID))
-	expr, err := expression.NewBuilder().WithKeyCondition(keyCondition).Build()
+	builder := expression.NewBuilder().WithKeyCondition(expression.Key("CustomID").Equal(expression.Value(customID)))
+	if minutes > 0 {
+		timestamp := time.Now().UTC().Add(-time.Duration(minutes) * time.Minute)
+		builder = builder.WithFilter(expression.Name("ServerTime").GreaterThanEqual(expression.Value(timestamp.Unix())))
+	} else {
+		builder = builder.WithFilter(expression.Name("ServerTime").GreaterThan(expression.Value(1)))
+	}
+	switch projection {
+	case IDAttributes:
+		builder = builder.WithProjection(idAttributesExpression)
+	case ListViewAttributes:
+		builder = builder.WithProjection(listViewAttributesExpression)
+	}
+	expr, err := builder.Build()
 	if err != nil {
-		return nil, fmt.Errorf("failed to build key condition expression: %w", err)
+		return nil, fmt.Errorf("failed to build expression: %w", err)
 	}
 	var records []Report
 	if err := db.instance.QueryPages(&dynamodb.QueryInput{
-		TableName:              aws.String(db.nodesTable),
-		IndexName:              aws.String(db.customIDIndex),
-		KeyConditionExpression: expr.KeyCondition(),
+		TableName:                 aws.String(db.nodesTable),
+		IndexName:                 aws.String(db.customIDIndex),
+		KeyConditionExpression:    expr.KeyCondition(),
+		FilterExpression:          expr.Filter(),
+		ProjectionExpression:      expr.Projection(),
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
 	}, func(output *dynamodb.QueryOutput, lastPage bool) bool {
 		for _, item := range output.Items {
 			var record Report

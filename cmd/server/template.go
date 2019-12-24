@@ -149,7 +149,7 @@ func handleNodesWeb(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Database unavailable", http.StatusInternalServerError)
 		return
 	}
-	reports, err := db.ListReports(offset, offset+limit)
+	reports, err := db.ListReports(offset, limit, 0, kaginawa.ListViewAttributes)
 	if err != nil {
 		log.Printf("failed to list reports: %v", err)
 		http.Error(w, "Database unavailable", http.StatusInternalServerError)
@@ -176,9 +176,23 @@ func handleNodesAPI(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	customID := r.URL.Query().Get("custom-id")
+	minutesStr := r.URL.Query().Get("minutes")
+	minutes := 0
+	if len(minutesStr) > 0 {
+		if n, err := strconv.Atoi(minutesStr); err == nil {
+			minutes = n
+		}
+	}
+	projection := kaginawa.AllAttributes
+	switch r.URL.Query().Get("projection") {
+	case "id":
+		projection = kaginawa.IDAttributes
+	case "list-view":
+		projection = kaginawa.ListViewAttributes
+	}
 	var reports []kaginawa.Report
 	if len(customID) > 0 {
-		records, err := db.GetReportByCustomID(customID)
+		records, err := db.ListReportsByCustomID(customID, minutes, projection)
 		if err != nil {
 			log.Printf("failed to list reports: %v", err)
 			http.Error(w, "Database unavailable", http.StatusInternalServerError)
@@ -192,7 +206,7 @@ func handleNodesAPI(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, "Database unavailable", http.StatusInternalServerError)
 			return
 		}
-		records, err := db.ListReports(0, count)
+		records, err := db.ListReports(0, count, minutes, projection)
 		if err != nil {
 			log.Printf("failed to list reports: %v", err)
 			http.Error(w, "Database unavailable", http.StatusInternalServerError)

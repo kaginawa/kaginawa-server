@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"strings"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -19,8 +20,29 @@ const (
 )
 
 var (
-	t      = true
-	upsert = &options.ReplaceOptions{Upsert: &t}
+	t                      = true
+	upsert                 = &options.ReplaceOptions{Upsert: &t}
+	idAttributesProjection = bson.D{
+		{"id", 1},
+		{"custom_id", 1},
+		{"server_time", 1},
+		{"success", 1},
+	}
+	listViewAttributesProjection = bson.D{
+		{"id", 1},
+		{"custom_id", 1},
+		{"hostname", 1},
+		{"server_time", 1},
+		{"ssh_server_host", 1},
+		{"ssh_remote_port", 1},
+		{"ip_global", 1},
+		{"host_global", 1},
+		{"ip4_local", 1},
+		{"seq", 1},
+		{"agent_version", 1},
+		{"success", 1},
+		{"errors", 1},
+	}
 )
 
 // MongoDB implements DB interface.
@@ -189,9 +211,20 @@ func (db MongoDB) CountReports() (int, error) {
 }
 
 // ListReports implements same signature of the DB interface.
-func (db MongoDB) ListReports(skip, limit int) ([]Report, error) {
+func (db MongoDB) ListReports(skip, limit, minutes int, projection Projection) ([]Report, error) {
 	opts := &options.FindOptions{Sort: bson.M{"custom_id": 1}, Skip: int64p(skip), Limit: int64p(limit)}
-	cur, err := db.instance.Collection(nodeCollection).Find(context.Background(), bson.D{}, opts)
+	switch projection {
+	case IDAttributes:
+		opts.Projection = idAttributesProjection
+	case ListViewAttributes:
+		opts.Projection = listViewAttributesProjection
+	}
+	filter := bson.M{}
+	if minutes > 0 {
+		timestamp := time.Now().UTC().Add(-time.Duration(minutes) * time.Minute)
+		filter = bson.M{"server_time": bson.M{"$gte": timestamp.Unix()}}
+	}
+	cur, err := db.instance.Collection(nodeCollection).Find(context.Background(), filter, opts)
 	if err != nil {
 		return nil, err
 	}
@@ -227,10 +260,21 @@ func (db MongoDB) GetReportByID(id string) (*Report, error) {
 	return &report, nil
 }
 
-// GetReportByCustomID implements same signature of the DB interface.
-func (db MongoDB) GetReportByCustomID(customID string) ([]Report, error) {
-	sort := &options.FindOptions{Sort: bson.M{"hostname": 1}}
-	cur, err := db.instance.Collection(nodeCollection).Find(context.Background(), bson.M{"custom_id": customID}, sort)
+// ListReportsByCustomID implements same signature of the DB interface.
+func (db MongoDB) ListReportsByCustomID(customID string, minutes int, projection Projection) ([]Report, error) {
+	opts := &options.FindOptions{Sort: bson.M{"hostname": 1}}
+	filter := bson.M{"custom_id": customID}
+	if minutes > 0 {
+		timestamp := time.Now().UTC().Add(-time.Duration(minutes) * time.Minute)
+		filter["server_time"] = bson.M{"$gte": timestamp.Unix()}
+	}
+	switch projection {
+	case IDAttributes:
+		opts.Projection = idAttributesProjection
+	case ListViewAttributes:
+		opts.Projection = listViewAttributesProjection
+	}
+	cur, err := db.instance.Collection(nodeCollection).Find(context.Background(), filter, opts)
 	if err != nil {
 		return nil, err
 	}
