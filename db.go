@@ -39,6 +39,8 @@ type DB interface {
 	PutAPIKey(apiKey APIKey) error
 	// ListSSHServers scans all ssh servers.
 	ListSSHServers() ([]SSHServer, error)
+	// GetSSHServerByHost queries a server by host.
+	GetSSHServerByHost(host string) (*SSHServer, error)
 	// PutSSHServer puts a ssh server entry.
 	PutSSHServer(server SSHServer) error
 	// PutReport puts a report.
@@ -62,11 +64,11 @@ type APIKey struct {
 
 // SSHServer defines database item of a ssh server.
 type SSHServer struct {
-	Host     string `bson:"host"`
-	Port     int    `bson:"port"`
-	User     string `bson:"user"`
-	Key      string `bson:"key"`
-	Password string `bson:"password"`
+	Host     string `json:"host" bson:"host"`
+	Port     int    `json:"port" bson:"port"`
+	User     string `json:"user" bson:"user"`
+	Key      string `json:"key,omitempty" bson:"key"`
+	Password string `json:"password,omitempty" bson:"password"`
 }
 
 // Addr formats address by host:port.

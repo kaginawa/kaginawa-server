@@ -12,9 +12,14 @@ import (
 const maxLengthKB = 10 * 1024 // 10MB
 
 // handleMeasure handles network throughput measurement endpoint.
-// - GET /measure/0 --- respond empty body for round trip time measurement
-// - GET /measure/500  --- respond 500KB body
-// - POST /measure/500 --- receive 500KB body
+//
+// - Method: GET or POST
+//   - GET /measure/0 --- respond empty body for round trip time measurement
+//   - GET /measure/500  --- respond 500KB body
+//   - POST /measure/500 --- receive 500KB body
+// - Client: Kaginawa
+// - Access: Normal
+// - Response: Raw
 func handleMeasure(w http.ResponseWriter, r *http.Request) {
 	kb, err := strconv.Atoi(mux.Vars(r)["kb"])
 	if err != nil || kb < 0 || kb > maxLengthKB {

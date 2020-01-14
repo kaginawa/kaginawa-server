@@ -214,6 +214,26 @@ func (db DynamoDB) ListSSHServers() ([]SSHServer, error) {
 	return records, nil
 }
 
+// GetSSHServerByHost implements same signature of the DB interface.
+func (db DynamoDB) GetSSHServerByHost(host string) (*SSHServer, error) {
+	hash, err := dynamodbattribute.MarshalMap(struct{ Host string }{host})
+	if err != nil {
+		return nil, fmt.Errorf("invalid ID: %v", err)
+	}
+	item, err := db.instance.GetItem(&dynamodb.GetItemInput{TableName: aws.String(db.serversTable), Key: hash})
+	if err != nil {
+		return nil, err
+	}
+	if item.Item == nil {
+		return nil, nil
+	}
+	var server SSHServer
+	if err := db.decoder.Decode(&dynamodb.AttributeValue{M: item.Item}, &server); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal record: %w", err)
+	}
+	return &server, nil
+}
+
 // PutSSHServer implements same signature of the DB interface.
 func (db DynamoDB) PutSSHServer(server SSHServer) error {
 	item, err := db.encoder.Encode(server)
@@ -315,8 +335,11 @@ func (db DynamoDB) GetReportByID(id string) (*Report, error) {
 		return nil, fmt.Errorf("invalid ID: %v", err)
 	}
 	item, err := db.instance.GetItem(&dynamodb.GetItemInput{TableName: aws.String(db.nodesTable), Key: hash})
-	if err != nil || item == nil {
+	if err != nil {
 		return nil, err
+	}
+	if item.Item == nil {
+		return nil, nil
 	}
 	var report Report
 	if err := db.decoder.Decode(&dynamodb.AttributeValue{M: item.Item}, &report); err != nil {

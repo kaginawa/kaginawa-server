@@ -23,6 +23,12 @@ type reply struct {
 	SSHPassword   string `json:"ssh_password,omitempty"`
 }
 
+// handleReport handles report submits.
+//
+// - Method: POST
+// - Client: Kaginawa
+// - Access: Normal
+// - Response: JSON
 func handleReport(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)

@@ -175,6 +175,22 @@ func (db MongoDB) ListSSHServers() ([]SSHServer, error) {
 	return servers, nil
 }
 
+// GetSSHServerByHost implements same signature of the DB interface.
+func (db MongoDB) GetSSHServerByHost(host string) (*SSHServer, error) {
+	result := db.instance.Collection(serverCollection).FindOne(context.Background(), bson.M{"host": host})
+	if result.Err() != nil {
+		if result.Err() == mongo.ErrNoDocuments {
+			return nil, nil
+		}
+		return nil, result.Err()
+	}
+	var server SSHServer
+	if err := result.Decode(&server); err != nil {
+		return nil, err
+	}
+	return &server, nil
+}
+
 // PutSSHServer implements same signature of the DB interface.
 func (db MongoDB) PutSSHServer(server SSHServer) error {
 	raw, err := bson.Marshal(server)
