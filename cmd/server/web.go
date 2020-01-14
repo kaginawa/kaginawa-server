@@ -471,6 +471,25 @@ func handleSSHServer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
+	server, err := db.GetSSHServerByHost(id)
+	if err != nil {
+		log.Printf("failed to get ssh server: %v", err)
+		http.Error(w, "Database unavailable", http.StatusInternalServerError)
+		return
+	}
+	if server == nil {
+		http.NotFound(w, r)
+		return
+	}
+	body, err := json.Marshal(server)
+	if err != nil {
+		log.Printf("failed to marshal response: %v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
+	w.Header().Add("Content-Type", contentTypeJSON)
+	if _, err := w.Write(body); err != nil {
+		log.Printf("failed to write body: %v", err)
+	}
 }
 
 func loadTemplates() []string {
