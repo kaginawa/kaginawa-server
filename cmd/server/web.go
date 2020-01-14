@@ -62,6 +62,12 @@ func init() {
 	}
 }
 
+// handleIndex handles index requests.
+//
+// - Method: GET or HEAD
+// - Client: Any
+// - Access: Public
+// - Response: HTML
 func handleIndex(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
@@ -71,10 +77,22 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 	}{})
 }
 
+// handleFavicon handles favicon requests.
+//
+// - Method: Any
+// - Client: Any
+// - Access: Public
+// - Response: File
 func handleFavicon(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "assets/favicon.ico")
 }
 
+// handleLogin handles login requests.
+//
+// - Method: GET, HEAD or POST
+// - Client: Browser
+// - Access: Public
+// - Response: HTML (GET) or 303 redirect (POST)
 func handleLogin(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case http.MethodHead:
@@ -121,6 +139,12 @@ func handleLogin(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// handleNodes handles list of nodes requests.
+//
+// - Method: GET or HEAD
+// - Client: Browser or API
+// - Access: Admin
+// - Response: HTML or JSON
 func handleNodes(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
@@ -228,6 +252,12 @@ func handleNodesAPI(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// handleNodes handles single node requests.
+//
+// - Method: GET or HEAD
+// - Client: Browser or API
+// - Access: Admin
+// - Response: HTML or JSON
 func handleNode(w http.ResponseWriter, r *http.Request) {
 	id := mux.Vars(r)["id"]
 	if len(id) == 0 {
@@ -300,6 +330,12 @@ func handleNodeAPI(w http.ResponseWriter, r *http.Request, id string) {
 	}
 }
 
+// handleAdmin handles admin console requests.
+//
+// - Method: GET or HEAD
+// - Client: Browser
+// - Access: Admin
+// - Response: HTML
 func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
@@ -330,6 +366,12 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// handleNewAPIKey handles API key creation requests.
+//
+// - Method: POST
+// - Client: Browser
+// - Access: Admin
+// - Response: 303 redirect
 func handleNewAPIKey(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
@@ -359,6 +401,12 @@ func handleNewAPIKey(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/admin", http.StatusSeeOther)
 }
 
+// handleNewAPIKey handles SSH server registration requests.
+//
+// - Method: POST
+// - Client: Browser
+// - Access: Admin
+// - Response: 303 redirect
 func handleNewSSHServer(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
@@ -401,6 +449,28 @@ func handleNewSSHServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.Redirect(w, r, "/admin", http.StatusSeeOther)
+}
+
+// handleSSHServer handles single SSH server requests.
+//
+// - Method: GET, HEAD
+// - Client: API
+// - Access: Admin
+// - Response: JSON
+func handleSSHServer(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+	if len(id) == 0 {
+		http.NotFound(w, r)
+		return
+	}
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+	if !validateAPIKey(r, true) {
+		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
+		return
+	}
 }
 
 func loadTemplates() []string {
