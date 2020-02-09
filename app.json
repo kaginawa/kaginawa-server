@@ -8,6 +8,12 @@
       "plan": "scheduler:standard"
     },
     {
+      "plan": "auth0:free"
+    },
+    {
+      "plan": "heroku-redis:hobby-dev"
+    },
+    {
       "plan": "mongolab:sandbox"
     }
   ]

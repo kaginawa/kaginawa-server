@@ -19,7 +19,6 @@ import (
 const (
 	templateDir     = "template"
 	templateExt     = ".html"
-	authCookieName  = "kaginawa-auth"
 	contentTypeJSON = "application/json"
 )
 
@@ -74,7 +73,10 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	execTemplate(w, "index", struct {
-	}{})
+		User string
+	}{
+		getSession(r).name(),
+	})
 }
 
 // handleFavicon handles favicon requests.
@@ -85,58 +87,6 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 // - Response: File
 func handleFavicon(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "assets/favicon.ico")
-}
-
-// handleLogin handles login requests.
-//
-// - Method: GET, HEAD or POST
-// - Client: Browser
-// - Access: Public
-// - Response: HTML (GET) or 303 redirect (POST)
-func handleLogin(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case http.MethodHead:
-		fallthrough
-	case http.MethodGet:
-		execTemplate(w, "login", struct {
-		}{})
-	case http.MethodPost:
-		if err := r.ParseForm(); err != nil {
-			log.Printf("failed to parse form: %v", err)
-			http.Error(w, "Invalid form", http.StatusBadRequest)
-			return
-		}
-		u := r.FormValue("user")
-		p := r.FormValue("password")
-		if len(u) == 0 {
-			http.Error(w, "User is empty", http.StatusBadRequest)
-			return
-		}
-		if len(p) == 0 {
-			http.Error(w, "Password is empty", http.StatusBadRequest)
-			return
-		}
-		if u != loginUser {
-			log.Printf("Invalid login attempt %s:%s", u, p)
-			http.Error(w, "Invalid user or password", http.StatusUnauthorized)
-			return
-		}
-		if p != loginPassword {
-			log.Printf("Invalid login attempt %s:%s", u, p)
-			http.Error(w, "Invalid user or password", http.StatusUnauthorized)
-			return
-		}
-		http.SetCookie(w, &http.Cookie{
-			Name:     authCookieName,
-			Value:    fmt.Sprintf("%x", loginToken),
-			Expires:  time.Now().AddDate(1, 0, 0),
-			HttpOnly: true,
-		})
-		http.Redirect(w, r, "/nodes", http.StatusSeeOther)
-		log.Print("user login")
-	default:
-		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
-	}
 }
 
 // handleNodes handles list of nodes requests.
@@ -158,7 +108,7 @@ func handleNodes(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleNodesWeb(w http.ResponseWriter, r *http.Request) {
-	if !validateCookie(r) {
+	if !getSession(r).isLoggedIn() {
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
@@ -276,7 +226,7 @@ func handleNode(w http.ResponseWriter, r *http.Request) {
 }
 
 func handleNodeWeb(w http.ResponseWriter, r *http.Request, id, user, password, response string) {
-	if !validateCookie(r) {
+	if !getSession(r).isLoggedIn() {
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
@@ -341,7 +291,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
 	}
-	if !validateCookie(r) {
+	if !getSession(r).isLoggedIn() {
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
@@ -377,7 +327,7 @@ func handleNewAPIKey(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
 	}
-	if !validateCookie(r) {
+	if !getSession(r).isLoggedIn() {
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}
@@ -412,7 +362,7 @@ func handleNewSSHServer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
 	}
-	if !validateCookie(r) {
+	if !getSession(r).isLoggedIn() {
 		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 		return
 	}

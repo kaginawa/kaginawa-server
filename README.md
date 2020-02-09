@@ -17,10 +17,20 @@ Docker image is available at [Docker Hub](https://hub.docker.com/r/kaginawa/kagi
 
 ### General
 
-Environment variables:
+Administration users must be authorized by OAuth 2.0 provider.
+We tested [Auth0](https://auth0.com/) as a provider.
 
-- `LOGIN_USER`: Web interface username
-- `LOGIN_PASSWORD`: Web interface password
+Required environment variables for OAuth 2.0 authorization:
+
+- `OAUTH_DOMAIN` or `AUTH0_DOMAIN`: OAuth 2.0 provider domain name (e.g. `xxx.auth0.com`)
+- `OAUTH_CLIENT_ID` or `AUTH0_CLIENT_ID`: OAuth 2.0 provider client ID
+- `OAUTH_CLIENT_SECRET` or `AUTH0_CLIENT_SECRET`: OAuth 2.0 provider client secret
+- `SELF_URL`: Self URL using OAuth 2.0 callback process (e.g. `http://localhost:8080`)
+
+By default, user sessions are stored into RAM.
+You can specify Redis URL to replace it. This is recommended for production use.
+
+- `REDIS_URL`: Redis URL (format: `redis://user:password@hostname:port`)
 
 ### Using MongoDB
 

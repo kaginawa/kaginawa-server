@@ -36,7 +36,7 @@ func handleCommand(w http.ResponseWriter, r *http.Request) {
 	// Validate API key
 	browser := false
 	if !validateAPIKey(r, true) {
-		if !validateCookie(r) {
+		if !getSession(r).isLoggedIn() {
 			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
 			return
 		}
