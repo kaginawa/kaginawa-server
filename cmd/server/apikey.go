@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 	"strings"
@@ -38,12 +37,4 @@ func validateAPIKey(r *http.Request, admin bool) bool {
 
 func extractAPIKey(r *http.Request) string {
 	return strings.Replace(r.Header.Get("Authorization"), "token ", "", 1)
-}
-
-func validateCookie(r *http.Request) bool {
-	cookie, err := r.Cookie(authCookieName)
-	if err != nil {
-		return false
-	}
-	return cookie.Value == fmt.Sprintf("%x", loginToken)
 }

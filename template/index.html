@@ -7,7 +7,13 @@
 </head>
 <body>
 <h1>Kaginawa Server</h1>
-It works!
+<p>It works!</p>
+{{if .User}}
+    <p>Welcome, {{.User}}.</p>
+    <a href="/logout"><button>Logout</button></a>
+{{else}}
+    <a href="/login"><button>Login</button></a>
+{{end}}
 <hr/>
 <address>Kaginawa Server</address>
 </body>

@@ -8,22 +8,22 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/kaginawa/kaginawa-server"
-	"golang.org/x/crypto/sha3"
 )
 
 const defaultPort = "8080"
 
-var (
-	db            kaginawa.DB
-	loginUser     string
-	loginPassword string
-	loginToken    [32]byte
-)
+var db kaginawa.DB
 
 func main() {
-	loginUser = os.Getenv("LOGIN_USER")
-	loginPassword = os.Getenv("LOGIN_PASSWORD")
-	loginToken = sha3.Sum256([]byte(loginUser))
+	// Initialize OAuth
+	if err := initOAuth(); err != nil {
+		log.Fatal(err)
+	}
+
+	// Initialize Session
+	if err := initSession(); err != nil {
+		log.Fatal(err)
+	}
 
 	// Initialize database
 	mongoURI := os.Getenv("MONGODB_URI")
@@ -41,7 +41,7 @@ func main() {
 		}
 		db = dynamoDB
 	} else {
-		log.Fatalf("Database not configured!")
+		log.Fatal("Database not configured!")
 	}
 
 	// Load api keys
@@ -68,7 +68,10 @@ func main() {
 	r.HandleFunc("/", handleIndex)
 	r.HandleFunc("/favicon.ico", handleFavicon)
 	r.HandleFunc("/report", handleReport)
-	r.HandleFunc("/login", handleLogin)
+	r.HandleFunc("/login", handleOAuthLogin)
+	r.HandleFunc("/callback", handleOAuthLoginCallback)
+	r.HandleFunc("/logout", handleOAuthLogout)
+	r.HandleFunc("/logout-complete", handleOAuthLogoutComplete)
 	r.HandleFunc("/nodes", handleNodes)
 	r.HandleFunc("/nodes/{id}", handleNode)
 	r.HandleFunc("/nodes/{id}/command", handleCommand)
@@ -86,4 +89,14 @@ func safeClose(closer io.Closer, name string) {
 	if err := closer.Close(); err != nil {
 		log.Printf("failed to close %s: %v", name, err)
 	}
+}
+
+func getEnvs(keys ...string) string {
+	for _, key := range keys {
+		value := os.Getenv(key)
+		if len(value) > 0 {
+			return value
+		}
+	}
+	return ""
 }
