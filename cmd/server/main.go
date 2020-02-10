@@ -15,12 +15,15 @@ const defaultPort = "8080"
 var db kaginawa.DB
 
 func main() {
+	// Initialize html template
+	initTemplate("template")
+
 	// Initialize OAuth
 	if err := initOAuth(); err != nil {
 		log.Fatal(err)
 	}
 
-	// Initialize Session
+	// Initialize session
 	if err := initSession(); err != nil {
 		log.Fatal(err)
 	}

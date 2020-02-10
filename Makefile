@@ -15,7 +15,7 @@ lint: ## Runs static code analysis
 
 .PHONY: run
 run: ## Run web application locally
-	GO111MODULE=on go run cmd/server/*.go
+	GO111MODULE=on go run `find cmd/server -type f -not -name "*_test.go" | tr '\r\n' ' '`
 
 .PHONY: docker-build
 docker-build: ## Build a docker image

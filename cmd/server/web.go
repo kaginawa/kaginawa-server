@@ -17,7 +17,6 @@ import (
 )
 
 const (
-	templateDir     = "template"
 	templateExt     = ".html"
 	contentTypeJSON = "application/json"
 )
@@ -55,9 +54,9 @@ var (
 	}
 )
 
-func init() {
-	for _, name := range loadTemplates() {
-		templates[name] = parseTemplate(name)
+func initTemplate(dir string) {
+	for _, name := range loadTemplates(dir) {
+		templates[name] = parseTemplate(name, dir)
 	}
 }
 
@@ -442,10 +441,10 @@ func handleSSHServer(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func loadTemplates() []string {
-	dirEntries, err := ioutil.ReadDir(templateDir)
+func loadTemplates(dir string) []string {
+	dirEntries, err := ioutil.ReadDir(dir)
 	if err != nil {
-		log.Fatalf("failed to read template directory \"%s\": %v", templateDir, err)
+		log.Fatalf("failed to read template directory \"%s\": %v", dir, err)
 	}
 	var templates []string
 	for _, fileInfo := range dirEntries {
@@ -460,8 +459,8 @@ func loadTemplates() []string {
 	return templates
 }
 
-func parseTemplate(n string) *template.Template {
-	list := []string{templateDir + "/" + n + templateExt}
+func parseTemplate(n, dir string) *template.Template {
+	list := []string{dir + "/" + n + templateExt}
 	t, err := template.New(n + ".html").Funcs(funcMap).ParseFiles(list...)
 	if err != nil {
 		panic(err)

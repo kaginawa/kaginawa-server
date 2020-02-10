@@ -52,19 +52,19 @@ type MongoDB struct {
 }
 
 // NewMongoDB will creates MongoDB instance that implements DB interface.
-func NewMongoDB(endpoint string) (MongoDB, error) {
+func NewMongoDB(endpoint string) (*MongoDB, error) {
 	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(endpoint).SetRetryWrites(false))
 	if err != nil {
-		return MongoDB{}, err
+		return &MongoDB{}, err
 	}
-	return MongoDB{
+	return &MongoDB{
 		client:   client,
 		instance: client.Database(endpoint[strings.LastIndex(endpoint, "/")+1:]),
 	}, nil
 }
 
 // ValidateAPIKey implements same signature of the DB interface.
-func (db MongoDB) ValidateAPIKey(key string) (bool, string, error) {
+func (db *MongoDB) ValidateAPIKey(key string) (bool, string, error) {
 	// Check cache first
 	if v, ok := KnownAPIKeys.Load(key); ok {
 		return ok, v.(string), nil
@@ -89,7 +89,7 @@ func (db MongoDB) ValidateAPIKey(key string) (bool, string, error) {
 }
 
 // ValidateAdminAPIKey implements same signature of the DB interface.
-func (db MongoDB) ValidateAdminAPIKey(key string) (bool, string, error) {
+func (db *MongoDB) ValidateAdminAPIKey(key string) (bool, string, error) {
 	// Check cache first
 	if v, ok := KnownAdminAPIKeys.Load(key); ok {
 		return ok, v.(string), nil
@@ -114,7 +114,7 @@ func (db MongoDB) ValidateAdminAPIKey(key string) (bool, string, error) {
 }
 
 // ListAPIKeys implements same signature of the DB interface.
-func (db MongoDB) ListAPIKeys() ([]APIKey, error) {
+func (db *MongoDB) ListAPIKeys() ([]APIKey, error) {
 	cur, err := db.instance.Collection(keyCollection).Find(context.Background(), bson.D{})
 	if err != nil {
 		return nil, err
@@ -140,7 +140,7 @@ func (db MongoDB) ListAPIKeys() ([]APIKey, error) {
 }
 
 // PutAPIKey implements same signature of the DB interface.
-func (db MongoDB) PutAPIKey(apiKey APIKey) error {
+func (db *MongoDB) PutAPIKey(apiKey APIKey) error {
 	raw, err := bson.Marshal(apiKey)
 	if err != nil {
 		return fmt.Errorf("failed to marshal: %w", err)
@@ -153,7 +153,7 @@ func (db MongoDB) PutAPIKey(apiKey APIKey) error {
 }
 
 // ListSSHServers implements same signature of the DB interface.
-func (db MongoDB) ListSSHServers() ([]SSHServer, error) {
+func (db *MongoDB) ListSSHServers() ([]SSHServer, error) {
 	cur, err := db.instance.Collection(serverCollection).Find(context.Background(), bson.D{})
 	if err != nil {
 		return nil, err
@@ -176,7 +176,7 @@ func (db MongoDB) ListSSHServers() ([]SSHServer, error) {
 }
 
 // GetSSHServerByHost implements same signature of the DB interface.
-func (db MongoDB) GetSSHServerByHost(host string) (*SSHServer, error) {
+func (db *MongoDB) GetSSHServerByHost(host string) (*SSHServer, error) {
 	result := db.instance.Collection(serverCollection).FindOne(context.Background(), bson.M{"host": host})
 	if result.Err() != nil {
 		if result.Err() == mongo.ErrNoDocuments {
@@ -192,7 +192,7 @@ func (db MongoDB) GetSSHServerByHost(host string) (*SSHServer, error) {
 }
 
 // PutSSHServer implements same signature of the DB interface.
-func (db MongoDB) PutSSHServer(server SSHServer) error {
+func (db *MongoDB) PutSSHServer(server SSHServer) error {
 	raw, err := bson.Marshal(server)
 	if err != nil {
 		return fmt.Errorf("failed to marshal: %w", err)
@@ -205,7 +205,7 @@ func (db MongoDB) PutSSHServer(server SSHServer) error {
 }
 
 // PutReport implements same signature of the DB interface.
-func (db MongoDB) PutReport(report Report) error {
+func (db *MongoDB) PutReport(report Report) error {
 	raw, err := bson.Marshal(report)
 	if err != nil {
 		return fmt.Errorf("failed to marshal: %w", err)
@@ -221,13 +221,13 @@ func (db MongoDB) PutReport(report Report) error {
 }
 
 // CountReports counts number of records in node table.
-func (db MongoDB) CountReports() (int, error) {
+func (db *MongoDB) CountReports() (int, error) {
 	n, err := db.instance.Collection(nodeCollection).CountDocuments(context.Background(), bson.D{})
 	return int(n), err
 }
 
 // ListReports implements same signature of the DB interface.
-func (db MongoDB) ListReports(skip, limit, minutes int, projection Projection) ([]Report, error) {
+func (db *MongoDB) ListReports(skip, limit, minutes int, projection Projection) ([]Report, error) {
 	opts := &options.FindOptions{Sort: bson.M{"custom_id": 1}, Skip: int64p(skip), Limit: int64p(limit)}
 	switch projection {
 	case IDAttributes:
@@ -261,7 +261,7 @@ func (db MongoDB) ListReports(skip, limit, minutes int, projection Projection) (
 }
 
 // GetReportByID implements same signature of the DB interface.
-func (db MongoDB) GetReportByID(id string) (*Report, error) {
+func (db *MongoDB) GetReportByID(id string) (*Report, error) {
 	result := db.instance.Collection(nodeCollection).FindOne(context.Background(), bson.M{"id": id})
 	if result.Err() != nil {
 		if result.Err() == mongo.ErrNoDocuments {
@@ -277,7 +277,7 @@ func (db MongoDB) GetReportByID(id string) (*Report, error) {
 }
 
 // ListReportsByCustomID implements same signature of the DB interface.
-func (db MongoDB) ListReportsByCustomID(customID string, minutes int, projection Projection) ([]Report, error) {
+func (db *MongoDB) ListReportsByCustomID(customID string, minutes int, projection Projection) ([]Report, error) {
 	opts := &options.FindOptions{Sort: bson.M{"hostname": 1}}
 	filter := bson.M{"custom_id": customID}
 	if minutes > 0 {

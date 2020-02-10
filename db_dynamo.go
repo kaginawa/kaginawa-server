@@ -103,7 +103,7 @@ func NewDynamoDB() (*DynamoDB, error) {
 }
 
 // ValidateAPIKey implements same signature of the DB interface.
-func (db DynamoDB) ValidateAPIKey(key string) (bool, string, error) {
+func (db *DynamoDB) ValidateAPIKey(key string) (bool, string, error) {
 	// Check cache first
 	if v, ok := KnownAPIKeys.Load(key); ok {
 		return ok, v.(string), nil
@@ -129,7 +129,7 @@ func (db DynamoDB) ValidateAPIKey(key string) (bool, string, error) {
 }
 
 // ValidateAdminAPIKey implements same signature of the DB interface.
-func (db DynamoDB) ValidateAdminAPIKey(key string) (bool, string, error) {
+func (db *DynamoDB) ValidateAdminAPIKey(key string) (bool, string, error) {
 	// Check cache first
 	if v, ok := KnownAdminAPIKeys.Load(key); ok {
 		return ok, v.(string), nil
@@ -158,7 +158,7 @@ func (db DynamoDB) ValidateAdminAPIKey(key string) (bool, string, error) {
 }
 
 // ListAPIKeys implements same signature of the DB interface.
-func (db DynamoDB) ListAPIKeys() ([]APIKey, error) {
+func (db *DynamoDB) ListAPIKeys() ([]APIKey, error) {
 	var records []APIKey
 	if err := db.instance.ScanPages(&dynamodb.ScanInput{
 		TableName: aws.String(db.keysTable),
@@ -183,7 +183,7 @@ func (db DynamoDB) ListAPIKeys() ([]APIKey, error) {
 }
 
 // PutAPIKey implements same signature of the DB interface.
-func (db DynamoDB) PutAPIKey(apiKey APIKey) error {
+func (db *DynamoDB) PutAPIKey(apiKey APIKey) error {
 	item, err := db.encoder.Encode(apiKey)
 	if err != nil {
 		return fmt.Errorf("failed to marshal: %w", err)
@@ -193,7 +193,7 @@ func (db DynamoDB) PutAPIKey(apiKey APIKey) error {
 }
 
 // ListSSHServers implements same signature of the DB interface.
-func (db DynamoDB) ListSSHServers() ([]SSHServer, error) {
+func (db *DynamoDB) ListSSHServers() ([]SSHServer, error) {
 	var records []SSHServer
 	if err := db.instance.ScanPages(&dynamodb.ScanInput{
 		TableName: aws.String(db.serversTable),
@@ -215,7 +215,7 @@ func (db DynamoDB) ListSSHServers() ([]SSHServer, error) {
 }
 
 // GetSSHServerByHost implements same signature of the DB interface.
-func (db DynamoDB) GetSSHServerByHost(host string) (*SSHServer, error) {
+func (db *DynamoDB) GetSSHServerByHost(host string) (*SSHServer, error) {
 	hash, err := dynamodbattribute.MarshalMap(struct{ Host string }{host})
 	if err != nil {
 		return nil, fmt.Errorf("invalid ID: %v", err)
@@ -235,7 +235,7 @@ func (db DynamoDB) GetSSHServerByHost(host string) (*SSHServer, error) {
 }
 
 // PutSSHServer implements same signature of the DB interface.
-func (db DynamoDB) PutSSHServer(server SSHServer) error {
+func (db *DynamoDB) PutSSHServer(server SSHServer) error {
 	item, err := db.encoder.Encode(server)
 	if err != nil {
 		return fmt.Errorf("failed to marshal: %w", err)
@@ -245,7 +245,7 @@ func (db DynamoDB) PutSSHServer(server SSHServer) error {
 }
 
 // PutReport implements same signature of the DB interface.
-func (db DynamoDB) PutReport(report Report) error {
+func (db *DynamoDB) PutReport(report Report) error {
 	if len(report.CustomID) == 0 {
 		report.CustomID = customIDPlaceholder
 	}
@@ -266,7 +266,7 @@ func (db DynamoDB) PutReport(report Report) error {
 }
 
 // CountReports implements same signature of the DB interface.
-func (db DynamoDB) CountReports() (int, error) {
+func (db *DynamoDB) CountReports() (int, error) {
 	var count int
 	err := db.instance.ScanPages(&dynamodb.ScanInput{
 		TableName: aws.String(db.nodesTable),
@@ -279,7 +279,7 @@ func (db DynamoDB) CountReports() (int, error) {
 }
 
 // ListReports implements same signature of the DB interface.
-func (db DynamoDB) ListReports(skip, limit, minutes int, projection Projection) ([]Report, error) {
+func (db *DynamoDB) ListReports(skip, limit, minutes int, projection Projection) ([]Report, error) {
 	builder := expression.NewBuilder()
 	if minutes > 0 {
 		timestamp := time.Now().UTC().Add(-time.Duration(minutes) * time.Minute)
@@ -329,7 +329,7 @@ func (db DynamoDB) ListReports(skip, limit, minutes int, projection Projection) 
 }
 
 // GetReportByID implements same signature of the DB interface.
-func (db DynamoDB) GetReportByID(id string) (*Report, error) {
+func (db *DynamoDB) GetReportByID(id string) (*Report, error) {
 	hash, err := dynamodbattribute.MarshalMap(struct{ ID string }{id})
 	if err != nil {
 		return nil, fmt.Errorf("invalid ID: %v", err)
@@ -349,7 +349,7 @@ func (db DynamoDB) GetReportByID(id string) (*Report, error) {
 }
 
 // ListReportsByCustomID implements same signature of the DB interface.
-func (db DynamoDB) ListReportsByCustomID(customID string, minutes int, projection Projection) ([]Report, error) {
+func (db *DynamoDB) ListReportsByCustomID(customID string, minutes int, projection Projection) ([]Report, error) {
 	if len(customID) == 0 {
 		customID = customIDPlaceholder
 	}
