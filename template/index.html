@@ -1,20 +1,33 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Kaginawa Server</title>
-    <link rel="stylesheet" href="/assets/kaginawa.css"/>
-</head>
-<body>
-<h1>Kaginawa Server</h1>
-<p>It works!</p>
-{{if .User}}
-    <p>Welcome, {{.User}}.</p>
-    <a href="/logout"><button>Logout</button></a>
-{{else}}
-    <a href="/login"><button>Login</button></a>
-{{end}}
-<hr/>
-<address>Kaginawa Server</address>
-</body>
-</html>
+{{template "header" .Meta}}
+<div class="container mx-auto py-4">
+    {{if .Meta.UserName}}
+        <p>Welcome, {{.Meta.UserName}}.</p>
+        <p class="py-1">
+            <a href="/nodes">
+                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow">
+                    List of Nodes
+                </button>
+            </a>
+            <a href="/admin">
+                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow">
+                    Admin
+                </button>
+            </a>
+        </p>
+        <p class="py-1">
+            <a href="/logout">
+                <button class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded shadow">
+                    Logout
+                </button>
+            </a>
+        </p>
+    {{else}}
+        <p>It works!</p>
+        <a href="/login">
+            <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow">
+                Login
+            </button>
+        </a>
+    {{end}}
+</div>
+{{template "footer" .Meta}}

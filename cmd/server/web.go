@@ -54,6 +54,26 @@ var (
 	}
 )
 
+type meta struct {
+	Title         string
+	UserName      string
+	GoVersion     string
+	NumGoroutines int
+	MemStats      runtime.MemStats
+}
+
+func newMeta(r *http.Request, title string) meta {
+	var mem runtime.MemStats
+	runtime.ReadMemStats(&mem)
+	return meta{
+		Title:         "Kaginawa Server | " + title,
+		UserName:      getSession(r).name(),
+		GoVersion:     runtime.Version(),
+		NumGoroutines: runtime.NumGoroutine(),
+		MemStats:      mem,
+	}
+}
+
 func initTemplate(dir string) {
 	for _, name := range loadTemplates(dir) {
 		templates[name] = parseTemplate(name, dir)
@@ -72,9 +92,9 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	execTemplate(w, "index", struct {
-		User string
+		Meta meta
 	}{
-		getSession(r).name(),
+		newMeta(r, "Welcome"),
 	})
 }
 
@@ -114,8 +134,6 @@ func handleNodesWeb(w http.ResponseWriter, r *http.Request) {
 	page := page(r)
 	limit := limit(r)
 	offset := (page - 1) * limit
-	var mem runtime.MemStats
-	runtime.ReadMemStats(&mem)
 	count, err := db.CountReports()
 	if err != nil {
 		log.Printf("failed to count reports: %v", err)
@@ -129,17 +147,13 @@ func handleNodesWeb(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	execTemplate(w, "nodes", struct {
-		Pager         Pager
-		Reports       []kaginawa.Report
-		GoVersion     string
-		NumGoroutines int
-		MemStats      runtime.MemStats
+		Meta    meta
+		Pager   Pager
+		Reports []kaginawa.Report
 	}{
+		newMeta(r, "List of Nodes"),
 		newPager(count, len(reports), page, limit, r.URL.Query()),
 		reports,
-		runtime.Version(),
-		runtime.NumGoroutine(),
-		mem,
 	})
 }
 
@@ -236,11 +250,13 @@ func handleNodeWeb(w http.ResponseWriter, r *http.Request, id, user, password, r
 		return
 	}
 	execTemplate(w, "node", struct {
+		Meta     meta
 		Report   kaginawa.Report
 		User     string
 		Password string
 		Response string
 	}{
+		newMeta(r, "Node Detail"),
 		*rep,
 		user,
 		password,
@@ -307,9 +323,11 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	execTemplate(w, "admin", struct {
+		Meta       meta
 		APIKeys    []kaginawa.APIKey
 		SSHServers []kaginawa.SSHServer
 	}{
+		newMeta(r, "Admin"),
 		keys,
 		servers,
 	})
@@ -460,7 +478,11 @@ func loadTemplates(dir string) []string {
 }
 
 func parseTemplate(n, dir string) *template.Template {
-	list := []string{dir + "/" + n + templateExt}
+	list := []string{
+		dir + "/" + n + templateExt,
+		dir + "/_header" + templateExt,
+		dir + "/_footer" + templateExt,
+	}
 	t, err := template.New(n + ".html").Funcs(funcMap).ParseFiles(list...)
 	if err != nil {
 		panic(err)

@@ -1,100 +1,100 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Kaginawa Server</title>
-    <link rel="stylesheet" href="/assets/kaginawa.css"/>
-</head>
-<body>
-<h1>Kaginawa Server</h1>
-<button onclick="document.location='/admin'">Admin</button>
-{{if .Reports}}
-    <table>
-        <thead>
-        <tr>
-            <th>ID</th>
-            <th>Custom ID</th>
-            <th>Hostname</th>
-            <th>Received Time</th>
-            <th>Connected Server</th>
-            <th>Global IP</th>
-            <th>Local IPv4</th>
-            <th>Seq</th>
-            <th>Version</th>
-            <th>Result</th>
-        </tr>
-        </thead>
-        <tbody>
-        {{range .Reports}}
-            {{$alive := t_fresh .ServerTime 5}}
-            <tr{{if not $alive}} class="state-old"{{end}}>
-                <td><a href="/nodes/{{.ID}}">{{.ID}}</a></td>
-                <td>{{.CustomID}}</td>
-                <td>{{.Hostname}}</td>
-                <td class="{{if $alive}}state-ok{{else}}state-old{{end}}">
-                    {{t_fmt .ServerTime "2006/1/2 15:04:05"}}
-                </td>
-                <td>{{if .SSHRemotePort}}{{.SSHServerHost}} {{.SSHRemotePort}}{{else}}N/A{{end}}</td>
-                <td>{{if .GlobalHost}}{{.GlobalHost}}{{else}}{{.GlobalIP}}{{end}}</td>
-                <td>{{.LocalIPv4}}</td>
-                <td>{{.Sequence}}</td>
-                <td>{{.AgentVersion}}</td>
-                <td>
-                    {{if .Errors}}
-                        <span class="state-ng">
+{{template "header" .Meta}}
+<div class="container mx-auto py-4">
+    {{if .Reports}}
+        <table class="table-auto">
+            <thead>
+            <tr>
+                <th class="px-1 py-1">ID</th>
+                <th class="px-1 py-1">Custom ID</th>
+                <th class="px-1 py-1">Hostname</th>
+                <th class="px-1 py-1">Received Time</th>
+                <th class="px-1 py-1">Connected Server</th>
+                <th class="px-1 py-1">Global IP</th>
+                <th class="px-1 py-1">Local IPv4</th>
+                <th class="px-1 py-1">Seq</th>
+                <th class="px-1 py-1">Version</th>
+                <th class="px-1 py-1">Result</th>
+            </tr>
+            </thead>
+            <tbody>
+            {{range .Reports}}
+                {{$alive := t_fresh .ServerTime 5}}
+                <tr{{if not $alive}} class="text-gray-600"{{end}}>
+                    <td class="border px-1 py-1">
+                        <a href="/nodes/{{.ID}}" class="underline">{{.ID}}</a>
+                    </td>
+                    <td class="border px-1 py-1">{{.CustomID}}</td>
+                    <td class="border px-1 py-1">{{.Hostname}}</td>
+                    <td class="border px-1 py-1 {{if $alive}}text-green-600{{else}}text-gray-600{{end}}">
+                        {{t_fmt .ServerTime "2006/1/2 15:04:05"}}
+                    </td>
+                    <td class="border px-1 py-1">
+                        {{if .SSHRemotePort}}{{.SSHServerHost}}:{{.SSHRemotePort}}{{else}}N/A{{end}}
+                    </td>
+                    <td class="border px-1 py-1">
+                        {{if .GlobalHost}}{{.GlobalHost}}{{else}}{{.GlobalIP}}{{end}}
+                    </td>
+                    <td class="border px-1 py-1">{{.LocalIPv4}}</td>
+                    <td class="border px-1 py-1">{{.Sequence}}</td>
+                    <td class="border px-1 py-1">{{.AgentVersion}}</td>
+                    <td class="border px-1 py-1">
+                        {{if .Errors}}
+                            <span class="text-red-600">
                             {{if eq (len .Errors) 1}}1 error{{else}}{{len .Errors}} errors{{end}}
                         </span>
-                    {{else}}
-                        <span class="{{if $alive}}state-ok{{end}}">OK</span>
-                    {{end}}
-                </td>
-            </tr>
-        {{end}}
-        </tbody>
-    </table>
-    <div>Showing {{.Pager.Head}} to {{.Pager.Tail}}, Total {{.Pager.Total}}</div>
-    <div>
-        {{if eq .Pager.Current 1}}
-            <button disabled>Prev</button>
-        {{else}}
-            <form method="get" action="">
-                {{range $k, $vs := .Pager.Queries}}
-                    {{if ne $k "page"}}
-                        {{range $vs}}
-                            <input type="hidden" name="{{$k}}" value="{{.}}"/>
+                        {{else}}
+                            <span class="{{if $alive}}text-green-600{{end}}">OK</span>
+                        {{end}}
+                    </td>
+                </tr>
+            {{end}}
+            </tbody>
+        </table>
+        <div>Showing {{.Pager.Head}} to {{.Pager.Tail}}, Total {{.Pager.Total}}</div>
+        <div class="text-center py-1">
+            {{if eq .Pager.Current 1}}
+                <button disabled
+                        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow opacity-50 cursor-not-allowed">
+                    Prev
+                </button>
+            {{else}}
+                <form method="get" action="">
+                    {{range $k, $vs := .Pager.Queries}}
+                        {{if ne $k "page"}}
+                            {{range $vs}}
+                                <input type="hidden" name="{{$k}}" value="{{.}}"/>
+                            {{end}}
                         {{end}}
                     {{end}}
-                {{end}}
-                <input type="hidden" name="page" value="{{.Pager.Prev}}"/>
-                <button>Prev</button>
-            </form>
-        {{end}}
-        {{if eq .Pager.Total .Pager.Tail}}
-            <button disabled>Next</button>
-        {{else}}
-            <form method="get" action="">
-                {{range $k, $vs := .Pager.Queries}}
-                    {{if ne $k "page"}}
-                        {{range $vs}}
-                            <input type="hidden" name="{{$k}}" value="{{.}}"/>
+                    <input type="hidden" name="page" value="{{.Pager.Prev}}"/>
+                    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow">
+                        Prev
+                    </button>
+                </form>
+            {{end}}
+            {{if eq .Pager.Total .Pager.Tail}}
+                <button disabled
+                        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow opacity-50 cursor-not-allowed">
+                    Next
+                </button>
+            {{else}}
+                <form method="get" action="">
+                    {{range $k, $vs := .Pager.Queries}}
+                        {{if ne $k "page"}}
+                            {{range $vs}}
+                                <input type="hidden" name="{{$k}}" value="{{.}}"/>
+                            {{end}}
                         {{end}}
                     {{end}}
-                {{end}}
-                <input type="hidden" name="page" value="{{.Pager.Next}}"/>
-                <button>Next</button>
-            </form>
-        {{end}}
-    </div>
-{{else}}
-    <p>WARNING: No reports found.</p>
-{{end}}
-<p>
-    MemAlloc: {{b_fmt .MemStats.Alloc}} /
-    NumGC: {{.MemStats.NumGC}} /
-    NumGoroutines: {{.NumGoroutines}} /
-    GoVersion: {{.GoVersion}}
-</p>
-<hr/>
-<address>Kaginawa Server</address>
-</body>
-</html>
+                    <input type="hidden" name="page" value="{{.Pager.Next}}"/>
+                    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow">
+                        Next
+                    </button>
+                </form>
+            {{end}}
+        </div>
+    {{else}}
+        <p>WARNING: No reports found.</p>
+    {{end}}
+</div>
+{{template "footer" .Meta}}
