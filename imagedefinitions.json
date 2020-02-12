@@ -1,0 +1,6 @@
+[
+  {
+    "name": "kaginawa-server",
+    "imageUri": "kaginawa/kaginawa-server:latest"
+  }
+]
