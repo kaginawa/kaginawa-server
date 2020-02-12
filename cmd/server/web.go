@@ -128,7 +128,7 @@ func handleNodes(w http.ResponseWriter, r *http.Request) {
 
 func handleNodesWeb(w http.ResponseWriter, r *http.Request) {
 	if !getSession(r).isLoggedIn() {
-		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 	page := page(r)
@@ -240,7 +240,7 @@ func handleNode(w http.ResponseWriter, r *http.Request) {
 
 func handleNodeWeb(w http.ResponseWriter, r *http.Request, id, user, password, response string) {
 	if !getSession(r).isLoggedIn() {
-		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 	rep, err := db.GetReportByID(id)
@@ -307,7 +307,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !getSession(r).isLoggedIn() {
-		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 	keys, err := db.ListAPIKeys()
@@ -380,7 +380,7 @@ func handleNewSSHServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if !getSession(r).isLoggedIn() {
-		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
 		return
 	}
 	if err := r.ParseForm(); err != nil {
