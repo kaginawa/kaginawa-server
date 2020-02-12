@@ -39,7 +39,7 @@
             <th class="border px-1 py-1">SSH Status</th>
             <td class="border px-1 py-1">
                 {{if ne .Report.SSHRemotePort 0}}
-                    <span class="text-green-600">Connected</span>
+                    <span class="text-green-700">Connected</span>
                 {{else}}
                     Not connected or disabled
                 {{end}}
@@ -81,7 +81,7 @@
                     {{if eq (len .Report.Errors) 1}}1 error{{else}}{{len .Report.Errors}} errors{{end}}
                 </span>
                 {{else}}
-                    <span class="text-green-600">OK</span>
+                    <span class="text-green-700">OK</span>
                 {{end}}
             </td>
         </tr>
