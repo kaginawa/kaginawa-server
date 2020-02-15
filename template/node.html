@@ -8,17 +8,18 @@
     <h2 class="text-2xl font-bold">{{.Report.ID}}{{if .Report.CustomID}} / {{.Report.CustomID}}{{end}}</h2>
     <h3 class="text-2xl">Newest Report Information</h3>
     <table class="table-auto">
+        <caption hidden>Newest Report Information</caption>
         <tbody>
         <tr>
-            <th class="border px-1 py-1">Received Time</th>
+            <th class="border px-1 py-1" scope="row">Received Time</th>
             <td class="border px-1 py-1">{{t_fmt .Report.ServerTime "2006/1/2 15:04:05"}}</td>
         </tr>
         <tr>
-            <th class="border px-1 py-1">Device Time</th>
+            <th class="border px-1 py-1" scope="row">Device Time</th>
             <td class="border px-1 py-1">{{t_fmt .Report.DeviceTime "2006/1/2 15:04:05"}}</td>
         </tr>
         <tr>
-            <th class="border px-1 py-1">Report Trigger</th>
+            <th class="border px-1 py-1" scope="row">Report Trigger</th>
             <td class="border px-1 py-1">
                 {{if .Report.IsBootTimeReport}}
                     Boot time
@@ -32,11 +33,11 @@
             </td>
         </tr>
         <tr>
-            <th class="border px-1 py-1">Report Sequence Number</th>
+            <th class="border px-1 py-1" scope="row">Report Sequence Number</th>
             <td class="border px-1 py-1">{{.Report.Sequence}}</td>
         </tr>
         <tr>
-            <th class="border px-1 py-1">SSH Status</th>
+            <th class="border px-1 py-1" scope="row">SSH Status</th>
             <td class="border px-1 py-1">
                 {{if ne .Report.SSHRemotePort 0}}
                     <span class="text-green-700">Connected</span>
@@ -47,34 +48,34 @@
         </tr>
         {{if ne .Report.SSHRemotePort 0}}
             <tr>
-                <th class="border px-1 py-1">SSH Server : Listen Port</th>
+                <th class="border px-1 py-1" scope="row">SSH Server : Listen Port</th>
                 <td class="border px-1 py-1">{{.Report.SSHServerHost}}:{{.Report.SSHRemotePort}}</td>
             </tr>
         {{end}}
         {{if gt .Report.RTTMills 0}}
             <tr>
-                <th class="border px-1 py-1">Round Trip Time</th>
+                <th class="border px-1 py-1" scope="row">Round Trip Time</th>
                 <td class="border px-1 py-1">{{.Report.RTTMills}}ms</td>
             </tr>
         {{end}}
         {{if gt .Report.DownloadKBPS 0}}
             <tr>
-                <th class="border px-1 py-1">Download Throughput</th>
+                <th class="border px-1 py-1" scope="row">Download Throughput</th>
                 <td class="border px-1 py-1">{{.Report.DownloadKBPS}}kbps ({{.Report.DownloadMBPS}}Mbps)</td>
             </tr>
         {{end}}
         {{if gt .Report.UploadKBPS 0}}
             <tr>
-                <th class="border px-1 py-1">Upload Throughput</th>
+                <th class="border px-1 py-1" scope="row">Upload Throughput</th>
                 <td class="border px-1 py-1">{{.Report.UploadKBPS}}kbps ({{.Report.DownloadMBPS}}Mbps)</td>
             </tr>
         {{end}}
         <tr>
-            <th class="border px-1 py-1">Generation Time</th>
+            <th class="border px-1 py-1" scope="row">Generation Time</th>
             <td class="border px-1 py-1">{{.Report.GenMillis}}ms</td>
         </tr>
         <tr>
-            <th class="border px-1 py-1">Result</th>
+            <th class="border px-1 py-1" scope="row">Result</th>
             <td class="border px-1 py-1">
                 {{if .Report.Errors}}
                     <span class="text-red-600">
@@ -87,7 +88,7 @@
         </tr>
         {{if .Report.Errors}}
             <tr>
-                <th class="border px-1 py-1">Error Details</th>
+                <th class="border px-1 py-1" scope="row">Error Details</th>
                 <td class="border px-1 py-1">
                     <ul>
                         {{range .Report.Errors}}
@@ -110,42 +111,43 @@
     </div>
     <h3 class="text-2xl">Node Information</h3>
     <table class="table-auto">
+        <caption hidden>Node Information</caption>
         <tbody>
         <tr>
-            <th class="border px-1 py-1">Hostname</th>
+            <th class="border px-1 py-1" scope="row">Hostname</th>
             <td class="border px-1 py-1">{{.Report.Hostname}}</td>
         </tr>
         <tr>
-            <th class="border px-1 py-1">Runtime</th>
+            <th class="border px-1 py-1" scope="row">Runtime</th>
             <td class="border px-1 py-1">{{.Report.Runtime}}</td>
         </tr>
         <tr>
-            <th class="border px-1 py-1">Boot Time</th>
+            <th class="border px-1 py-1" scope="row">Boot Time</th>
             <td class="border px-1 py-1">{{t_fmt .Report.BootTime "2006/1/2 15:04:05"}}</td>
         </tr>
         <tr>
-            <th class="border px-1 py-1">Adapter Name</th>
+            <th class="border px-1 py-1" scope="row">Adapter Name</th>
             <td class="border px-1 py-1">{{.Report.Adapter}}</td>
         </tr>
         <tr>
-            <th class="border px-1 py-1">Local IPv4</th>
+            <th class="border px-1 py-1" scope="row">Local IPv4</th>
             <td class="border px-1 py-1">{{.Report.LocalIPv4}}</td>
         </tr>
         <tr>
-            <th class="border px-1 py-1">Local IPv6</th>
+            <th class="border px-1 py-1" scope="row">Local IPv6</th>
             <td class="border px-1 py-1">{{.Report.LocalIPv6}}</td>
         </tr>
         <tr>
-            <th class="border px-1 py-1">Global IP</th>
+            <th class="border px-1 py-1" scope="row">Global IP</th>
             <td class="border px-1 py-1">{{.Report.GlobalIP}}</td>
         </tr>
         <tr>
-            <th class="border px-1 py-1">Reverse Lookup Result</th>
+            <th class="border px-1 py-1" scope="row">Reverse Lookup Result</th>
             <td class="border px-1 py-1">{{if .Report.GlobalHost}}{{.Report.GlobalHost}}{{else}}N/A{{end}}</td>
         </tr>
         {{if .Report.DiskMountPoint}}
             <tr>
-                <th class="border px-1 py-1">Usage of "{{.Report.DiskMountPoint}}"</th>
+                <th class="border px-1 py-1" scope="row">Usage of "{{.Report.DiskMountPoint}}"</th>
                 <td class="border px-1 py-1">
                     {{.Report.DiskUsedBytes}}B ({{b_fmt .Report.DiskUsedBytes}}) /
                     {{.Report.DiskTotalBytes}}B ({{b_fmt .Report.DiskTotalBytes}})
@@ -153,21 +155,21 @@
                 </td>
             </tr>
             <tr>
-                <th class="border px-1 py-1">Device of "{{.Report.DiskMountPoint}}"</th>
+                <th class="border px-1 py-1" scope="row">Device of "{{.Report.DiskMountPoint}}"</th>
                 <td class="border px-1 py-1">{{.Report.DiskDevice}}</td>
             </tr>
             <tr>
-                <th class="border px-1 py-1">Filesystem of "{{.Report.DiskMountPoint}}"</th>
+                <th class="border px-1 py-1" scope="row">Filesystem of "{{.Report.DiskMountPoint}}"</th>
                 <td class="border px-1 py-1">{{.Report.DiskFilesystem}}</td>
             </tr>
             <tr>
-                <th class="border px-1 py-1">Disk Label of "{{.Report.DiskMountPoint}}"</th>
+                <th class="border px-1 py-1" scope="row">Disk Label of "{{.Report.DiskMountPoint}}"</th>
                 <td class="border px-1 py-1">{{.Report.DiskLabel}}</td>
             </tr>
         {{end}}
         {{if .Report.USBDevices}}
             <tr>
-                <th class="border px-1 py-1">USB Devices</th>
+                <th class="border px-1 py-1" scope="row">USB Devices</th>
                 <td class="border px-1 py-1">
                     <ul>
                         {{range .Report.USBDevices}}
@@ -179,7 +181,7 @@
         {{end}}
         {{if .Report.BDLocalDevices}}
             <tr>
-                <th class="border px-1 py-1">Bluetooth Local Devices</th>
+                <th class="border px-1 py-1" scope="row">Bluetooth Local Devices</th>
                 <td class="border px-1 py-1">
                     <ul>
                         {{range .Report.BDLocalDevices}}
@@ -190,7 +192,7 @@
             </tr>
         {{end}}
         <tr>
-            <th class="border px-1 py-1">Version</th>
+            <th class="border px-1 py-1" scope="row">Version</th>
             <td class="border px-1 py-1">{{.Report.AgentVersion}}</td>
         </tr>
         </tbody>

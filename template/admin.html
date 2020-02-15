@@ -3,11 +3,12 @@
     <h2 class="text-2xl">API Keys</h2>
     {{if .APIKeys}}
         <table class="table-auto">
+            <caption hidden>List of API Keys</caption>
             <thead>
             <tr>
-                <th class="px-1 py-1">API Key</th>
-                <th class="px-1 py-1">Label</th>
-                <th class="px-1 py-1">Admin</th>
+                <th class="px-1 py-1" scope="col">API Key</th>
+                <th class="px-1 py-1" scope="col">Label</th>
+                <th class="px-1 py-1" scope="col">Admin</th>
             </tr>
             </thead>
             <tbody>
@@ -66,13 +67,14 @@
     <h2 class="text-2xl">SSH Servers</h2>
     {{if .SSHServers}}
         <table class="table-auto">
+            <caption hidden>List of SSH Servers</caption>
             <thead>
             <tr>
-                <th class="px-1 py-1">Host</th>
-                <th class="px-1 py-1">Port</th>
-                <th class="px-1 py-1">User</th>
-                <th class="px-1 py-1">Key</th>
-                <th class="px-1 py-1">Password</th>
+                <th class="px-1 py-1" scope="col">Host</th>
+                <th class="px-1 py-1" scope="col">Port</th>
+                <th class="px-1 py-1" scope="col">User</th>
+                <th class="px-1 py-1" scope="col">Key</th>
+                <th class="px-1 py-1" scope="col">Password</th>
             </tr>
             </thead>
             <tbody>
