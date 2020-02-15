@@ -2,18 +2,19 @@
 <div class="container mx-auto py-4">
     {{if .Reports}}
         <table class="table-auto">
+            <caption hidden>List of Reports</caption>
             <thead>
             <tr>
-                <th class="px-1 py-1">ID</th>
-                <th class="px-1 py-1">Custom ID</th>
-                <th class="px-1 py-1">Hostname</th>
-                <th class="px-1 py-1">Received Time</th>
-                <th class="px-1 py-1">Connected Server</th>
-                <th class="px-1 py-1">Global IP</th>
-                <th class="px-1 py-1">Local IP</th>
-                <th class="px-1 py-1">Seq</th>
-                <th class="px-1 py-1">Version</th>
-                <th class="px-1 py-1">Result</th>
+                <th class="px-1 py-1" scope="col">ID</th>
+                <th class="px-1 py-1" scope="col">Custom ID</th>
+                <th class="px-1 py-1" scope="col">Hostname</th>
+                <th class="px-1 py-1" scope="col">Received Time</th>
+                <th class="px-1 py-1" scope="col">Connected Server</th>
+                <th class="px-1 py-1" scope="col">Global IP</th>
+                <th class="px-1 py-1" scope="col">Local IP</th>
+                <th class="px-1 py-1" scope="col">Seq</th>
+                <th class="px-1 py-1" scope="col">Version</th>
+                <th class="px-1 py-1" scope="col">Result</th>
             </tr>
             </thead>
             <tbody>
