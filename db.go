@@ -25,6 +25,8 @@ const (
 	IDAttributes
 	// ListViewAttributes defines projection pattern of list page attributes
 	ListViewAttributes
+	// MeasurementAttributes defines projection pattern of measurement attributes
+	MeasurementAttributes
 )
 
 // DB implements database operations.
@@ -53,6 +55,8 @@ type DB interface {
 	GetReportByID(id string) (*Report, error)
 	// ListReportsByCustomID queries list of reports by custom id.
 	ListReportsByCustomID(customID string, minutes int, projection Projection) ([]Report, error)
+	// ListHistory queries list of history.
+	ListHistory(id string, begin time.Time, end time.Time, projection Projection) ([]Report, error)
 }
 
 // APIKey defines database item of an api key.

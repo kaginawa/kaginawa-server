@@ -118,14 +118,14 @@ aws dynamodb update-table \
 
 ## Admin API
 
-### List nodes
+### `/nodes` List nodes
 
 - Method: `GET`
 - Resource: `/nodes`
 - Query Params:
     - (Optional) `custom-id` - filter by custom-id
     - (Optional) `minutes` - filter by minutes ago
-    - (Optional) `projection` - pattern of projection attributes (`all`, `id` or `list-view`)
+    - (Optional) `projection` - pattern of projection attributes (`all`, `id`, `list-view` or `measurement`)
 - Headers:
     - `Authorization: token <admin_api_key>`
     - `Accept: application/json`
@@ -157,10 +157,10 @@ Curl example with `minutes` and `projection`:
 curl -H "Authorization: token admin123" -H "Accept: application/json" -X GET "http://localhost:8080/nodes?minutes=5&projection=id"
 ```
 
-### Get node by ID
+### `/nodes/:id` Get node by ID
 
 - Method: `GET`
-- Resource: `/nodes/<ID>`
+- Resource: `/nodes/:id`
 - Headers:
     - `Authorization: token <admin_api_key>`
     - `Accept: application/json`
@@ -172,10 +172,10 @@ Curl example:
 curl -H "Authorization: token admin123" -H "Accept: application/json" -X GET "http://localhost:8080/nodes/02:00:17:00:7d:b0"
 ```
 
-### Send command via ssh
+### `/nodes/:id/command` Send command via ssh
 
 - Method: `POST`
-- Resource: `/nodes/<ID>/command`
+- Resource: `/nodes/:id/command`
 - Header:
     - `Authorization: token <admin_api_key>`
 - Form params:
@@ -190,6 +190,24 @@ Curl example:
 
 ```
 curl -H "Authorization: token admin123" -X POST -d user=pi -d password=raspberry -d timeout=10 -d command="ls -alh" "http://localhost:8080/nodes/02:00:17:00:7d:b0/command"
+```
+
+### `/nodes/:id/histories` List report histories
+
+- Method: `GET`
+- Resource: `/nodes/:id/history`
+- Header:
+    - `Authorization: token <admin_api_key>`
+- Form params:
+    - (Optional) `begin` - begin time as UTC unix timestamp (default: 24 hours ago)
+    - (Optional) `end` - end time as UTC unix timestamp (default: now)
+    - (Optional) `projection` - pattern of projection attributes (`all`, `id`, `list-view` or `measurement`)
+- Response: List of all `Record` object (see [db.go](db.go) definition)
+
+Curl example:
+
+```
+curl -H "Authorization: token admin123" -H "Accept: application/json" -X GET "http://localhost:8080/nodes/02:00:17:00:7d:b0/history&begin=1581900000&end=1582000000"
 ```
 
 ## License

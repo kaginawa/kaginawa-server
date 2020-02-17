@@ -1,6 +1,9 @@
 package kaginawa
 
-import "sync"
+import (
+	"sync"
+	"time"
+)
 
 // MemDB implements in-memory store for testing.
 type MemDB struct {
@@ -157,6 +160,20 @@ func (db *MemDB) ListReportsByCustomID(customID string, _ int, _ Projection) ([]
 	for _, v := range db.nodes {
 		if v.CustomID == customID {
 			slice = append(slice, v)
+		}
+	}
+	return slice, nil
+}
+
+// ListHistory implements same signature of the DB interface.
+func (db *MemDB) ListHistory(id string, begin time.Time, end time.Time, _ Projection) ([]Report, error) {
+	db.nodesMutex.RLock()
+	defer db.nodesMutex.RUnlock()
+	var slice []Report
+	for _, l := range db.logs {
+		t := time.Unix(l.ServerTime, 0)
+		if l.ID == id && t.Before(begin) && t.After(end) {
+			slice = append(slice, l)
 		}
 	}
 	return slice, nil

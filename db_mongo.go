@@ -20,29 +20,8 @@ const (
 )
 
 var (
-	t                      = true
-	upsert                 = &options.ReplaceOptions{Upsert: &t}
-	idAttributesProjection = bson.D{
-		{"id", 1},
-		{"custom_id", 1},
-		{"server_time", 1},
-		{"success", 1},
-	}
-	listViewAttributesProjection = bson.D{
-		{"id", 1},
-		{"custom_id", 1},
-		{"hostname", 1},
-		{"server_time", 1},
-		{"ssh_server_host", 1},
-		{"ssh_remote_port", 1},
-		{"ip_global", 1},
-		{"host_global", 1},
-		{"ip4_local", 1},
-		{"seq", 1},
-		{"agent_version", 1},
-		{"success", 1},
-		{"errors", 1},
-	}
+	t      = true
+	upsert = &options.ReplaceOptions{Upsert: &t}
 )
 
 // MongoDB implements DB interface.
@@ -119,11 +98,7 @@ func (db *MongoDB) ListAPIKeys() ([]APIKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err := cur.Close(context.Background()); err != nil {
-			log.Printf("failed to close cursor: %v", err)
-		}
-	}()
+	defer db.safeClose(cur)
 	var apiKeys []APIKey
 	for cur.Next(context.Background()) {
 		var result APIKey
@@ -158,11 +133,7 @@ func (db *MongoDB) ListSSHServers() ([]SSHServer, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err := cur.Close(context.Background()); err != nil {
-			log.Printf("failed to close cursor: %v", err)
-		}
-	}()
+	defer db.safeClose(cur)
 	var servers []SSHServer
 	for cur.Next(context.Background()) {
 		var result SSHServer
@@ -229,12 +200,7 @@ func (db *MongoDB) CountReports() (int, error) {
 // ListReports implements same signature of the DB interface.
 func (db *MongoDB) ListReports(skip, limit, minutes int, projection Projection) ([]Report, error) {
 	opts := &options.FindOptions{Sort: bson.M{"custom_id": 1}, Skip: int64p(skip), Limit: int64p(limit)}
-	switch projection {
-	case IDAttributes:
-		opts.Projection = idAttributesProjection
-	case ListViewAttributes:
-		opts.Projection = listViewAttributesProjection
-	}
+	opts = db.applyProjection(opts, projection)
 	filter := bson.M{}
 	if minutes > 0 {
 		timestamp := time.Now().UTC().Add(-time.Duration(minutes) * time.Minute)
@@ -244,20 +210,8 @@ func (db *MongoDB) ListReports(skip, limit, minutes int, projection Projection) 
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err := cur.Close(context.Background()); err != nil {
-			log.Printf("failed to close cursor: %v", err)
-		}
-	}()
-	reports := make([]Report, 0)
-	for cur.Next(context.Background()) {
-		var result Report
-		if err := cur.Decode(&result); err != nil {
-			return nil, err
-		}
-		reports = append(reports, result)
-	}
-	return reports, nil
+	defer db.safeClose(cur)
+	return db.decodeReports(cur)
 }
 
 // GetReportByID implements same signature of the DB interface.
@@ -284,21 +238,74 @@ func (db *MongoDB) ListReportsByCustomID(customID string, minutes int, projectio
 		timestamp := time.Now().UTC().Add(-time.Duration(minutes) * time.Minute)
 		filter["server_time"] = bson.M{"$gte": timestamp.Unix()}
 	}
-	switch projection {
-	case IDAttributes:
-		opts.Projection = idAttributesProjection
-	case ListViewAttributes:
-		opts.Projection = listViewAttributesProjection
-	}
+	opts = db.applyProjection(opts, projection)
 	cur, err := db.instance.Collection(nodeCollection).Find(context.Background(), filter, opts)
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err := cur.Close(context.Background()); err != nil {
-			log.Printf("failed to close cursor: %v", err)
+	defer db.safeClose(cur)
+	return db.decodeReports(cur)
+}
+
+// ListHistory implements same signature of the DB interface.
+func (db *MongoDB) ListHistory(id string, begin time.Time, end time.Time, projection Projection) ([]Report, error) {
+	opts := db.applyProjection(&options.FindOptions{Sort: bson.M{"server_time": 1}}, projection)
+	filter := bson.M{"id": id, "server_time": bson.M{"$gte": begin.Unix(), "$lte": end.Unix()}}
+	cur, err := db.instance.Collection(logCollection).Find(context.Background(), filter, opts)
+	if err != nil {
+		return nil, err
+	}
+	defer db.safeClose(cur)
+	return db.decodeReports(cur)
+}
+
+func (db *MongoDB) applyProjection(opts *options.FindOptions, projection Projection) *options.FindOptions {
+	switch projection {
+	case IDAttributes:
+		opts.Projection = bson.D{
+			{"id", 1},
+			{"custom_id", 1},
+			{"server_time", 1},
+			{"success", 1},
 		}
-	}()
+	case ListViewAttributes:
+		opts.Projection = bson.D{
+			{"id", 1},
+			{"custom_id", 1},
+			{"hostname", 1},
+			{"server_time", 1},
+			{"ssh_server_host", 1},
+			{"ssh_remote_port", 1},
+			{"ip_global", 1},
+			{"host_global", 1},
+			{"ip4_local", 1},
+			{"seq", 1},
+			{"agent_version", 1},
+			{"success", 1},
+			{"errors", 1},
+		}
+	case MeasurementAttributes:
+		opts.Projection = bson.D{
+			{"id", 1},
+			{"custom_id", 1},
+			{"hostname", 1},
+			{"server_time", 1},
+			{"seq", 1},
+			{"rtt_ms", 1},
+			{"upload_bps", 1},
+			{"download_bps", 1},
+		}
+	}
+	return opts
+}
+
+func (db *MongoDB) safeClose(cur *mongo.Cursor) {
+	if err := cur.Close(context.Background()); err != nil {
+		log.Printf("failed to close cursor: %v", err)
+	}
+}
+
+func (db *MongoDB) decodeReports(cur *mongo.Cursor) ([]Report, error) {
 	reports := make([]Report, 0)
 	for cur.Next(context.Background()) {
 		var result Report

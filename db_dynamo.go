@@ -17,30 +17,6 @@ import (
 
 const customIDPlaceholder = "-"
 
-var (
-	idAttributesExpression = expression.NamesList(
-		expression.Name("ID"),
-		expression.Name("CustomID"),
-		expression.Name("ServerTime"),
-		expression.Name("Success"),
-	)
-	listViewAttributesExpression = expression.NamesList(
-		expression.Name("ID"),
-		expression.Name("CustomID"),
-		expression.Name("Hostname"),
-		expression.Name("ServerTime"),
-		expression.Name("SSHServerHost"),
-		expression.Name("SSHRemotePort"),
-		expression.Name("GlobalIP"),
-		expression.Name("GlobalHost"),
-		expression.Name("LocalIPv4"),
-		expression.Name("Sequence"),
-		expression.Name("AgentVersion"),
-		expression.Name("Success"),
-		expression.Name("Errors"),
-	)
-)
-
 // DynamoDB implements DB interface.
 type DynamoDB struct {
 	instance      *dynamodb.DynamoDB
@@ -287,12 +263,7 @@ func (db *DynamoDB) ListReports(skip, limit, minutes int, projection Projection)
 	} else {
 		builder = builder.WithFilter(expression.Name("ServerTime").GreaterThan(expression.Value(1)))
 	}
-	switch projection {
-	case IDAttributes:
-		builder = builder.WithProjection(idAttributesExpression)
-	case ListViewAttributes:
-		builder = builder.WithProjection(listViewAttributesExpression)
-	}
+	builder = db.applyProjection(builder, projection)
 	expr, err := builder.Build()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build expression: %w", err)
@@ -360,18 +331,12 @@ func (db *DynamoDB) ListReportsByCustomID(customID string, minutes int, projecti
 	} else {
 		builder = builder.WithFilter(expression.Name("ServerTime").GreaterThan(expression.Value(1)))
 	}
-	switch projection {
-	case IDAttributes:
-		builder = builder.WithProjection(idAttributesExpression)
-	case ListViewAttributes:
-		builder = builder.WithProjection(listViewAttributesExpression)
-	}
+	builder = db.applyProjection(builder, projection)
 	expr, err := builder.Build()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build expression: %w", err)
 	}
-	var records []Report
-	if err := db.instance.QueryPages(&dynamodb.QueryInput{
+	return db.queryReports(&dynamodb.QueryInput{
 		TableName:                 aws.String(db.nodesTable),
 		IndexName:                 aws.String(db.customIDIndex),
 		KeyConditionExpression:    expr.KeyCondition(),
@@ -379,7 +344,71 @@ func (db *DynamoDB) ListReportsByCustomID(customID string, minutes int, projecti
 		ProjectionExpression:      expr.Projection(),
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
-	}, func(output *dynamodb.QueryOutput, lastPage bool) bool {
+	})
+}
+
+// ListHistory implements same signature of the DB interface.
+func (db *DynamoDB) ListHistory(id string, begin time.Time, end time.Time, projection Projection) ([]Report, error) {
+	keyCond := expression.Key("ID").Equal(expression.Value(id)).And(
+		expression.Key("ServerTime").Between(expression.Value(begin.Unix()), expression.Value(end.Unix())))
+	builder := db.applyProjection(expression.NewBuilder().WithKeyCondition(keyCond), projection)
+	expr, err := builder.Build()
+	if err != nil {
+		return nil, fmt.Errorf("failed to build expression: %w", err)
+	}
+	return db.queryReports(&dynamodb.QueryInput{
+		TableName:                 aws.String(db.logsTable),
+		KeyConditionExpression:    expr.KeyCondition(),
+		FilterExpression:          expr.Filter(),
+		ProjectionExpression:      expr.Projection(),
+		ExpressionAttributeNames:  expr.Names(),
+		ExpressionAttributeValues: expr.Values(),
+	})
+}
+
+func (db *DynamoDB) applyProjection(builder expression.Builder, projection Projection) expression.Builder {
+	switch projection {
+	case IDAttributes:
+		return builder.WithProjection(expression.NamesList(
+			expression.Name("ID"),
+			expression.Name("CustomID"),
+			expression.Name("ServerTime"),
+			expression.Name("Success"),
+		))
+	case ListViewAttributes:
+		return builder.WithProjection(expression.NamesList(
+			expression.Name("ID"),
+			expression.Name("CustomID"),
+			expression.Name("Hostname"),
+			expression.Name("ServerTime"),
+			expression.Name("SSHServerHost"),
+			expression.Name("SSHRemotePort"),
+			expression.Name("GlobalIP"),
+			expression.Name("GlobalHost"),
+			expression.Name("LocalIPv4"),
+			expression.Name("Sequence"),
+			expression.Name("AgentVersion"),
+			expression.Name("Success"),
+			expression.Name("Errors"),
+		))
+	case MeasurementAttributes:
+		return builder.WithProjection(expression.NamesList(
+			expression.Name("ID"),
+			expression.Name("CustomID"),
+			expression.Name("Hostname"),
+			expression.Name("ServerTime"),
+			expression.Name("Sequence"),
+			expression.Name("RTTMills"),
+			expression.Name("UploadKBPS"),
+			expression.Name("DownloadKBPS"),
+		))
+	}
+	return builder
+}
+
+func (db *DynamoDB) queryReports(query *dynamodb.QueryInput) ([]Report, error) {
+	var records []Report
+	if err := db.instance.QueryPages(query, func(output *dynamodb.QueryOutput, lastPage bool) bool {
 		for _, item := range output.Items {
 			var record Report
 			if err := db.decoder.Decode(&dynamodb.AttributeValue{M: item}, &record); err != nil {
