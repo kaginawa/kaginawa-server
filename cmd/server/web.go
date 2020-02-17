@@ -492,7 +492,7 @@ func handleHistories(w http.ResponseWriter, r *http.Request) {
 	}
 	begin := end.AddDate(0, 0, -1)
 	beginParam := r.URL.Query().Get("begin")
-	if len(endParam) > 0 {
+	if len(beginParam) > 0 {
 		if raw, err := strconv.ParseInt(beginParam, 10, 64); err == nil {
 			begin = time.Unix(raw, 0)
 		}
