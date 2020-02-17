@@ -176,6 +176,8 @@ func handleNodesAPI(w http.ResponseWriter, r *http.Request) {
 		projection = kaginawa.IDAttributes
 	case "list-view":
 		projection = kaginawa.ListViewAttributes
+	case "measurement":
+		projection = kaginawa.MeasurementAttributes
 	}
 	var reports []kaginawa.Report
 	if len(customID) > 0 {
@@ -449,6 +451,68 @@ func handleSSHServer(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	body, err := json.Marshal(server)
+	if err != nil {
+		log.Printf("failed to marshal response: %v", err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
+	w.Header().Add("Content-Type", contentTypeJSON)
+	if _, err := w.Write(body); err != nil {
+		log.Printf("failed to write body: %v", err)
+	}
+}
+
+// handleHistories handles list of histories for specified node.
+//
+// - Method: GET
+// - Client: Browser or API
+// - Access: Admin
+// - Response: JSON
+func handleHistories(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+	if len(id) == 0 {
+		http.NotFound(w, r)
+		return
+	}
+	if r.Method != http.MethodGet {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+	if !validateAPIKey(r, true) {
+		if !getSession(r).isLoggedIn() {
+			http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+			return
+		}
+	}
+	end := time.Now()
+	endParam := r.URL.Query().Get("end")
+	if len(endParam) > 0 {
+		if raw, err := strconv.ParseInt(endParam, 10, 64); err == nil {
+			end = time.Unix(raw, 0)
+		}
+	}
+	begin := end.AddDate(0, 0, -1)
+	beginParam := r.URL.Query().Get("begin")
+	if len(endParam) > 0 {
+		if raw, err := strconv.ParseInt(beginParam, 10, 64); err == nil {
+			begin = time.Unix(raw, 0)
+		}
+	}
+	projection := kaginawa.AllAttributes
+	switch r.URL.Query().Get("projection") {
+	case "id":
+		projection = kaginawa.IDAttributes
+	case "list-view":
+		projection = kaginawa.ListViewAttributes
+	case "measurement":
+		projection = kaginawa.MeasurementAttributes
+	}
+	logs, err := db.ListHistory(id, begin, end, projection)
+	if err != nil {
+		log.Printf("failed to query history: %v", err)
+		http.Error(w, "Database unavailable", http.StatusInternalServerError)
+		return
+	}
+	body, err := json.Marshal(logs)
 	if err != nil {
 		log.Printf("failed to marshal response: %v", err)
 		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)

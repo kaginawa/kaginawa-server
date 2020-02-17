@@ -22,6 +22,12 @@ type commandResponse struct {
 	err  error
 }
 
+// handleCommand handles execute a command via ssh.
+//
+// - Method: HEAD
+// - Client: Browser or API
+// - Access: Admin
+// - Response: Text
 func handleCommand(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
@@ -33,7 +39,7 @@ func handleCommand(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Validate API key
+	// Validate API key or session
 	browser := false
 	if !validateAPIKey(r, true) {
 		if !getSession(r).isLoggedIn() {
