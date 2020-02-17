@@ -98,11 +98,7 @@ func (db *MongoDB) ListAPIKeys() ([]APIKey, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err := cur.Close(context.Background()); err != nil {
-			log.Printf("failed to close cursor: %v", err)
-		}
-	}()
+	defer db.safeClose(cur)
 	var apiKeys []APIKey
 	for cur.Next(context.Background()) {
 		var result APIKey
@@ -137,11 +133,7 @@ func (db *MongoDB) ListSSHServers() ([]SSHServer, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err := cur.Close(context.Background()); err != nil {
-			log.Printf("failed to close cursor: %v", err)
-		}
-	}()
+	defer db.safeClose(cur)
 	var servers []SSHServer
 	for cur.Next(context.Background()) {
 		var result SSHServer
@@ -218,20 +210,8 @@ func (db *MongoDB) ListReports(skip, limit, minutes int, projection Projection) 
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err := cur.Close(context.Background()); err != nil {
-			log.Printf("failed to close cursor: %v", err)
-		}
-	}()
-	reports := make([]Report, 0)
-	for cur.Next(context.Background()) {
-		var result Report
-		if err := cur.Decode(&result); err != nil {
-			return nil, err
-		}
-		reports = append(reports, result)
-	}
-	return reports, nil
+	defer db.safeClose(cur)
+	return db.decodeReports(cur)
 }
 
 // GetReportByID implements same signature of the DB interface.
@@ -263,20 +243,8 @@ func (db *MongoDB) ListReportsByCustomID(customID string, minutes int, projectio
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err := cur.Close(context.Background()); err != nil {
-			log.Printf("failed to close cursor: %v", err)
-		}
-	}()
-	reports := make([]Report, 0)
-	for cur.Next(context.Background()) {
-		var result Report
-		if err := cur.Decode(&result); err != nil {
-			return nil, err
-		}
-		reports = append(reports, result)
-	}
-	return reports, nil
+	defer db.safeClose(cur)
+	return db.decodeReports(cur)
 }
 
 // ListHistory implements same signature of the DB interface.
@@ -287,20 +255,8 @@ func (db *MongoDB) ListHistory(id string, begin time.Time, end time.Time, projec
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err := cur.Close(context.Background()); err != nil {
-			log.Printf("failed to close cursor: %v", err)
-		}
-	}()
-	reports := make([]Report, 0)
-	for cur.Next(context.Background()) {
-		var result Report
-		if err := cur.Decode(&result); err != nil {
-			return nil, err
-		}
-		reports = append(reports, result)
-	}
-	return reports, nil
+	defer db.safeClose(cur)
+	return db.decodeReports(cur)
 }
 
 func (db *MongoDB) applyProjection(opts *options.FindOptions, projection Projection) *options.FindOptions {
@@ -341,6 +297,24 @@ func (db *MongoDB) applyProjection(opts *options.FindOptions, projection Project
 		}
 	}
 	return opts
+}
+
+func (db *MongoDB) safeClose(cur *mongo.Cursor) {
+	if err := cur.Close(context.Background()); err != nil {
+		log.Printf("failed to close cursor: %v", err)
+	}
+}
+
+func (db *MongoDB) decodeReports(cur *mongo.Cursor) ([]Report, error) {
+	reports := make([]Report, 0)
+	for cur.Next(context.Background()) {
+		var result Report
+		if err := cur.Decode(&result); err != nil {
+			return nil, err
+		}
+		reports = append(reports, result)
+	}
+	return reports, nil
 }
 
 func int64p(n int) *int64 {

@@ -336,8 +336,7 @@ func (db *DynamoDB) ListReportsByCustomID(customID string, minutes int, projecti
 	if err != nil {
 		return nil, fmt.Errorf("failed to build expression: %w", err)
 	}
-	var records []Report
-	if err := db.instance.QueryPages(&dynamodb.QueryInput{
+	return db.queryReports(&dynamodb.QueryInput{
 		TableName:                 aws.String(db.nodesTable),
 		IndexName:                 aws.String(db.customIDIndex),
 		KeyConditionExpression:    expr.KeyCondition(),
@@ -345,20 +344,7 @@ func (db *DynamoDB) ListReportsByCustomID(customID string, minutes int, projecti
 		ProjectionExpression:      expr.Projection(),
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
-	}, func(output *dynamodb.QueryOutput, lastPage bool) bool {
-		for _, item := range output.Items {
-			var record Report
-			if err := db.decoder.Decode(&dynamodb.AttributeValue{M: item}, &record); err != nil {
-				log.Printf("skipping error item: %v", err)
-				continue
-			}
-			records = append(records, record)
-		}
-		return !lastPage
-	}); err != nil {
-		return nil, err
-	}
-	return records, nil
+	})
 }
 
 // ListHistory implements same signature of the DB interface.
@@ -370,28 +356,14 @@ func (db *DynamoDB) ListHistory(id string, begin time.Time, end time.Time, proje
 	if err != nil {
 		return nil, fmt.Errorf("failed to build expression: %w", err)
 	}
-	var records []Report
-	if err := db.instance.QueryPages(&dynamodb.QueryInput{
+	return db.queryReports(&dynamodb.QueryInput{
 		TableName:                 aws.String(db.logsTable),
 		KeyConditionExpression:    expr.KeyCondition(),
 		FilterExpression:          expr.Filter(),
 		ProjectionExpression:      expr.Projection(),
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
-	}, func(output *dynamodb.QueryOutput, lastPage bool) bool {
-		for _, item := range output.Items {
-			var record Report
-			if err := db.decoder.Decode(&dynamodb.AttributeValue{M: item}, &record); err != nil {
-				log.Printf("skipping error item: %v", err)
-				continue
-			}
-			records = append(records, record)
-		}
-		return !lastPage
-	}); err != nil {
-		return nil, err
-	}
-	return records, nil
+	})
 }
 
 func (db *DynamoDB) applyProjection(builder expression.Builder, projection Projection) expression.Builder {
@@ -432,4 +404,22 @@ func (db *DynamoDB) applyProjection(builder expression.Builder, projection Proje
 		))
 	}
 	return builder
+}
+
+func (db *DynamoDB) queryReports(query *dynamodb.QueryInput) ([]Report, error) {
+	var records []Report
+	if err := db.instance.QueryPages(query, func(output *dynamodb.QueryOutput, lastPage bool) bool {
+		for _, item := range output.Items {
+			var record Report
+			if err := db.decoder.Decode(&dynamodb.AttributeValue{M: item}, &record); err != nil {
+				log.Printf("skipping error item: %v", err)
+				continue
+			}
+			records = append(records, record)
+		}
+		return !lastPage
+	}); err != nil {
+		return nil, err
+	}
+	return records, nil
 }
