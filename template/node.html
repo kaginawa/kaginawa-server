@@ -310,15 +310,10 @@
                 {
                     id: "rtt",
                     position: "left",
-                    type: 'logarithmic',
                     ticks: {
                         beginAtZero: true,
-                        callback: function (value) {
-                            return Number(value.toString());
-                        }
-                    },
-                    afterBuildTicks: function (chartObj) {
-                        chartObj.ticks = [0, 100, 500, 1000, 2000];
+                        min: 0,
+                        max: 3000,
                     },
                     scaleLabel: {
                         display: true,
@@ -333,12 +328,12 @@
                     },
                     scaleLabel: {
                         display: true,
-                        labelString: "Throughput (kbps)",
+                        labelString: "Throughput (Mbps)",
                     }
                 },
                 {
-                    id: 'no-data',
-                    position: 'right',
+                    id: "no-data",
+                    position: "right",
                     display: false,
                     ticks: {
                         beginAtZero: true
@@ -352,29 +347,29 @@
             }
         },
         tooltips: {
-            mode: 'index',
+            mode: "index",
             intersect: false,
         }
     };
-    const chartLoading = document.getElementById('chart-loading');
-    const prevButton = document.getElementById('prev-button');
-    const nextButton = document.getElementById('next-button');
+    const chartLoading = document.getElementById("chart-loading");
+    const prevButton = document.getElementById("prev-button");
+    const nextButton = document.getElementById("next-button");
     let page = 1;
     let chart = null;
 
     function fillEmpty(begin, end, histories) {
         const timeline = [];
         const errorTimelineBegin = begin.clone().minute(((begin.minutes / 10) ^ 1) * 10).second(0).millisecond(0)
-            .add(40, 'minutes');
+            .add(40, "minutes");
         for (let i = 0; ; i++) {
-            const next = errorTimelineBegin.clone().add(i * 10, 'minutes');
+            const next = errorTimelineBegin.clone().add(i * 10, "minutes");
             if (next.isAfter(end)) {
                 break
             }
             let noData = true;
             for (let j = 0; j < histories.length; j++) {
-                const lowerLimit = histories[j].timestamp.clone().subtract(10, 'minutes');
-                const upperLimit = histories[j].timestamp.clone().add(10, 'minutes');
+                const lowerLimit = histories[j].timestamp.clone().subtract(10, "minutes");
+                const upperLimit = histories[j].timestamp.clone().add(10, "minutes");
                 if (next.isSameOrAfter(lowerLimit) && next.isSameOrBefore(upperLimit)) {
                     noData = false;
                     break
@@ -413,7 +408,8 @@
                 noData(ctx);
                 return;
             }
-            const histories = fillEmpty(begin, end, JSON.parse(event.target["responseText"]).map(h => {
+            const result = JSON.parse(event.target["responseText"]);
+            const histories = fillEmpty(begin, end, (result ? result : []).map(h => {
                 h.timestamp = moment(h["server_time"] * 1000);
                 return h
             }));
@@ -427,18 +423,18 @@
                     datasets: [
                         {
                             label: "Round Trip Time (ms)",
-                            data: histories.map(h => h["rtt_ms"]),
-                            backgroundColor: "rgba(54, 162, 235, 0.2)",
-                            borderColor: "rgba(54, 162, 235, 1)",
-                            fill: true,
+                            type: "bar",
+                            data: histories.map(h => h["rtt_ms"] > 0 ? h["rtt_ms"] : null),
+                            backgroundColor: "rgba(54, 162, 235, 0.5)",
+                            borderColor: "rgba(54, 162, 235, 0.5)",
                             pointRadius: 0,
                             pointHoverRadius: 2,
                             borderWidth: 1,
                             yAxisID: "rtt",
                         },
                         {
-                            label: "Upload Throughput (kbps)",
-                            data: histories.map(h => h["upload_bps"]),
+                            label: "Upload Throughput (Mbps)",
+                            data: histories.map(h => h["upload_bps"] ? h["upload_bps"] * 1000 : null),
                             backgroundColor: "rgba(255, 159, 64, 0.2)",
                             borderColor: "rgba(255, 159, 64, 1)",
                             fill: false,
@@ -448,8 +444,8 @@
                             yAxisID: "throughput",
                         },
                         {
-                            label: "Download Throughput (kbps)",
-                            data: histories.map(h => h["download_bps"]),
+                            label: "Download Throughput (Mbps)",
+                            data: histories.map(h => h["download_bps"] ? h["download_bps"] * 1000 : null),
                             backgroundColor: "rgba(75, 192, 192, 0.2)",
                             borderColor: "rgba(75, 192, 192, 1)",
                             fill: false,
@@ -480,9 +476,9 @@
         const newest = page <= 1;
         nextButton.disabled = newest;
         if (newest) {
-            nextButton.classList.add('opacity-50', 'cursor-not-allowed');
+            nextButton.classList.add("opacity-50", "cursor-not-allowed");
         } else {
-            nextButton.classList.remove('opacity-50', 'cursor-not-allowed');
+            nextButton.classList.remove("opacity-50", "cursor-not-allowed");
         }
         networkQualityChart();
     }
