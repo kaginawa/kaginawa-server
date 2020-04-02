@@ -1,120 +1,25 @@
 {{template "header" .Meta}}
 <script src="https://cdn.jsdelivr.net/npm/moment@2.24.0/moment.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.js"></script>
-<script>
-    function noData(ctx) {
-        ctx.fillStyle = "gray";
-        ctx.font = "15px sans serif";
-        ctx.textAlign = "center";
-        ctx.fillText("No Data", 200, 75);
+<style>
+    .loader {
+        border: 16px solid #f3f3f3;
+        border-top: 16px solid #3498db;
+        border-radius: 50%;
+        width: 50px;
+        height: 50px;
+        animation: spin 2s linear infinite;
     }
 
-    function networkQualityChart(nodeId) {
-        const ctx = document.getElementById('network-chart').getContext('2d');
-        const request = new XMLHttpRequest();
-        request.open("GET", "/nodes/" + nodeId + "/histories?projection=measurement");
-        request.addEventListener("load", (event) => {
-            if (event.target["status"] !== 200) {
-                console.error(`[net_chart] ${event.target["status"]}: ${event.target["statusText"]}`);
-                noData(ctx);
-                return;
-            }
-            const histories = JSON.parse(event.target["responseText"]);
-            new Chart(ctx, {
-                type: "line",
-                data: {
-                    labels: histories.map(h => moment(h["server_time"] * 1000)),
-                    datasets: [
-                        {
-                            label: "Round Trip Time (ms)",
-                            data: histories.map(h => h["rtt_ms"]),
-                            backgroundColor: "rgba(54, 162, 235, 0.2)",
-                            borderColor: "rgba(54, 162, 235, 1)",
-                            fill: false,
-                            pointRadius: 0,
-                            pointHoverRadius: 2,
-                            borderWidth: 1,
-                            yAxisID: "rtt",
-                        },
-                        {
-                            label: "Upload Throughput (kbps)",
-                            data: histories.map(h => h["upload_bps"]),
-                            backgroundColor: "rgba(255, 159, 64, 0.2)",
-                            borderColor: "rgba(255, 159, 64, 1)",
-                            fill: false,
-                            pointRadius: 0,
-                            pointHoverRadius: 2,
-                            borderWidth: 1,
-                            yAxisID: "throughput",
-                        },
-                        {
-                            label: "Download Throughput (kbps)",
-                            data: histories.map(h => h["download_bps"]),
-                            backgroundColor: "rgba(75, 192, 192, 0.2)",
-                            borderColor: "rgba(75, 192, 192, 1)",
-                            fill: false,
-                            pointRadius: 0,
-                            pointHoverRadius: 2,
-                            borderWidth: 1,
-                            yAxisID: "throughput",
-                        },
-                    ]
-                },
-                options: {
-                    scales: {
-                        xAxes: [
-                            {
-                                type: "time",
-                                time: {
-                                    unit: "hour",
-                                    unitStepSize: 3,
-                                    displayFormats: {
-                                        "hour": "MM/DD H:mm",
-                                    },
-                                    tooltipFormat: "YYYY/MM/DD HH:mm",
-                                }
-                            }
-                        ],
-                        yAxes: [
-                            {
-                                id: "rtt",
-                                position: "left",
-                                ticks: {
-                                    beginAtZero: true,
-                                },
-                                scaleLabel: {
-                                    display: true,
-                                    labelString: "Round Trip Time (ms)",
-                                }
-                            },
-                            {
-                                id: "throughput",
-                                position: "right",
-                                ticks: {
-                                    beginAtZero: true,
-                                },
-                                scaleLabel: {
-                                    display: true,
-                                    labelString: "Throughput (kbps)",
-                                }
-                            }
-                        ]
-                    },
-                    elements: {
-                        point: {
-                            pointStyle: "circle",
-                        }
-                    },
-                    tooltips: {
-                        mode: 'index',
-                        intersect: false,
-                    }
-                }
-            });
-        });
-        request.send();
+    @keyframes spin {
+        0% {
+            transform: rotate(0deg);
+        }
+        100% {
+            transform: rotate(360deg);
+        }
     }
-</script>
+</style>
 <div class="container mx-auto py-4">
     <a href="/nodes">
         <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow">
@@ -122,10 +27,20 @@
         </button>
     </a>
     <h2 class="text-2xl font-bold">{{.Report.ID}}{{if .Report.CustomID}} / {{.Report.CustomID}}{{end}}</h2>
-    <canvas id="network-chart" width="400" height="80"></canvas>
-    <script>
-        networkQualityChart("{{.Report.ID}}")
-    </script>
+    <div id="chart-loading" style="position: absolute; left: 0; right: 0; margin: 50px auto;"></div>
+    <canvas id="network-chart" width="400" height="80" style="min-height: 160px"></canvas>
+    <div class="text-center">
+        <div class="inline-flex">
+            <button id="prev-button" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-l">
+                &lt; Prev
+            </button>
+            <button id="next-button"
+                    class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-r opacity-50 cursor-not-allowed"
+                    disabled>
+                Next &gt;
+            </button>
+        </div>
+    </div>
     <h3 class="text-2xl">Newest Report Information</h3>
     <table class="table-auto">
         <caption hidden>Newest Report Information</caption>
@@ -373,4 +288,215 @@
     </form>
     <pre class="bg-gray-100">{{.Response}}</pre>
 </div>
+<script>
+    const nodeId = "{{.Report.ID}}";
+    const daysPerPage = 3;
+    const chartOptions = {
+        scales: {
+            xAxes: [
+                {
+                    type: "time",
+                    time: {
+                        unit: "hour",
+                        unitStepSize: 6,
+                        displayFormats: {
+                            "hour": "MM/DD H:mm",
+                        },
+                        tooltipFormat: "YYYY/MM/DD HH:mm",
+                    }
+                }
+            ],
+            yAxes: [
+                {
+                    id: "rtt",
+                    position: "left",
+                    type: 'logarithmic',
+                    ticks: {
+                        beginAtZero: true,
+                        callback: function (value) {
+                            return Number(value.toString());
+                        }
+                    },
+                    afterBuildTicks: function (chartObj) {
+                        chartObj.ticks = [0, 100, 500, 1000, 2000];
+                    },
+                    scaleLabel: {
+                        display: true,
+                        labelString: "Round Trip Time (ms)",
+                    }
+                },
+                {
+                    id: "throughput",
+                    position: "right",
+                    ticks: {
+                        beginAtZero: true,
+                    },
+                    scaleLabel: {
+                        display: true,
+                        labelString: "Throughput (kbps)",
+                    }
+                },
+                {
+                    id: 'no-data',
+                    position: 'right',
+                    display: false,
+                    ticks: {
+                        beginAtZero: true
+                    }
+                }
+            ]
+        },
+        elements: {
+            point: {
+                pointStyle: "circle",
+            }
+        },
+        tooltips: {
+            mode: 'index',
+            intersect: false,
+        }
+    };
+    const chartLoading = document.getElementById('chart-loading');
+    const prevButton = document.getElementById('prev-button');
+    const nextButton = document.getElementById('next-button');
+    let page = 1;
+    let chart = null;
+
+    function fillEmpty(begin, end, histories) {
+        const timeline = [];
+        const errorTimelineBegin = begin.clone().minute(((begin.minutes / 10) ^ 1) * 10).second(0).millisecond(0)
+            .add(40, 'minutes');
+        for (let i = 0; ; i++) {
+            const next = errorTimelineBegin.clone().add(i * 10, 'minutes');
+            if (next.isAfter(end)) {
+                break
+            }
+            let noData = true;
+            for (let j = 0; j < histories.length; j++) {
+                const lowerLimit = histories[j].timestamp.clone().subtract(10, 'minutes');
+                const upperLimit = histories[j].timestamp.clone().add(10, 'minutes');
+                if (next.isSameOrAfter(lowerLimit) && next.isSameOrBefore(upperLimit)) {
+                    noData = false;
+                    break
+                }
+            }
+            if (noData) {
+                timeline.push({
+                    timestamp: next,
+                    noData: true
+                })
+            }
+        }
+        return histories.concat(timeline).sort((a, b) => {
+            return a.timestamp.diff(b.timestamp)
+        })
+    }
+
+    function noData(ctx) {
+        ctx.fillStyle = "gray";
+        ctx.font = "15px sans serif";
+        ctx.textAlign = "center";
+        ctx.fillText("No Data", 200, 75);
+    }
+
+    function networkQualityChart() {
+        chartLoading.classList.add('loader');
+        const end = moment().subtract((page - 1) * daysPerPage, 'days');
+        const begin = moment().subtract(page * daysPerPage, 'days');
+        const ctx = document.getElementById('network-chart').getContext('2d');
+        const request = new XMLHttpRequest();
+        request.open("GET", "/nodes/" + nodeId + "/histories?projection=measurement&begin=" + begin.unix() + '&end=' + end.unix());
+        request.addEventListener("load", (event) => {
+            chartLoading.classList.remove('loader');
+            if (event.target["status"] !== 200) {
+                console.error(`[net_chart] ${event.target["status"]}: ${event.target["statusText"]}`);
+                noData(ctx);
+                return;
+            }
+            const histories = fillEmpty(begin, end, JSON.parse(event.target["responseText"]).map(h => {
+                h.timestamp = moment(h["server_time"] * 1000);
+                return h
+            }));
+            if (chart !== null) {
+                chart.destroy();
+            }
+            chart = new Chart(ctx, {
+                type: "line",
+                data: {
+                    labels: histories.map(h => h.timestamp),
+                    datasets: [
+                        {
+                            label: "Round Trip Time (ms)",
+                            data: histories.map(h => h["rtt_ms"]),
+                            backgroundColor: "rgba(54, 162, 235, 0.2)",
+                            borderColor: "rgba(54, 162, 235, 1)",
+                            fill: true,
+                            pointRadius: 0,
+                            pointHoverRadius: 2,
+                            borderWidth: 1,
+                            yAxisID: "rtt",
+                        },
+                        {
+                            label: "Upload Throughput (kbps)",
+                            data: histories.map(h => h["upload_bps"]),
+                            backgroundColor: "rgba(255, 159, 64, 0.2)",
+                            borderColor: "rgba(255, 159, 64, 1)",
+                            fill: false,
+                            pointRadius: 0,
+                            pointHoverRadius: 2,
+                            borderWidth: 1,
+                            yAxisID: "throughput",
+                        },
+                        {
+                            label: "Download Throughput (kbps)",
+                            data: histories.map(h => h["download_bps"]),
+                            backgroundColor: "rgba(75, 192, 192, 0.2)",
+                            borderColor: "rgba(75, 192, 192, 1)",
+                            fill: false,
+                            pointRadius: 0,
+                            pointHoverRadius: 2,
+                            borderWidth: 1,
+                            yAxisID: "throughput",
+                        },
+                        {
+                            label: "No Data",
+                            data: histories.map(h => h.noData ? 1 : 0),
+                            backgroundColor: "rgb(255, 99, 132, 0.5)",
+                            borderColor: "rgb(255, 99, 132, 0.0)",
+                            fill: true,
+                            pointRadius: 0,
+                            borderWidth: 0,
+                            yAxisID: "no-data",
+                        },
+                    ]
+                },
+                options: chartOptions
+            });
+        });
+        request.send();
+    }
+
+    function updateChart() {
+        const newest = page <= 1;
+        nextButton.disabled = newest;
+        if (newest) {
+            nextButton.classList.add('opacity-50', 'cursor-not-allowed');
+        } else {
+            nextButton.classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+        networkQualityChart();
+    }
+
+    prevButton.onclick = function () {
+        page++;
+        updateChart();
+    };
+
+    nextButton.onclick = function () {
+        page--;
+        updateChart();
+    };
+
+    networkQualityChart();
+</script>
 {{template "footer" .Meta}}

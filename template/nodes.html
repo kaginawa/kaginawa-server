@@ -53,46 +53,48 @@
         </table>
         <div>Showing {{.Pager.Head}} to {{.Pager.Tail}}, Total {{.Pager.Total}}</div>
         <div class="text-center py-1">
-            {{if eq .Pager.Current 1}}
-                <button disabled
-                        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow opacity-50 cursor-not-allowed">
-                    Prev
-                </button>
-            {{else}}
-                <form method="get" action="" class="inline-block">
-                    {{range $k, $vs := .Pager.Queries}}
-                        {{if ne $k "page"}}
-                            {{range $vs}}
-                                <input type="hidden" name="{{$k}}" value="{{.}}"/>
+            <div class="inline-flex">
+                {{if eq .Pager.Current 1}}
+                    <button disabled
+                            class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-l shadow opacity-50 cursor-not-allowed">
+                        &lt; Prev
+                    </button>
+                {{else}}
+                    <form method="get" action="" class="inline-block">
+                        {{range $k, $vs := .Pager.Queries}}
+                            {{if ne $k "page"}}
+                                {{range $vs}}
+                                    <input type="hidden" name="{{$k}}" value="{{.}}"/>
+                                {{end}}
                             {{end}}
                         {{end}}
-                    {{end}}
-                    <input type="hidden" name="page" value="{{.Pager.Prev}}"/>
-                    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow">
-                        Prev
+                        <input type="hidden" name="page" value="{{.Pager.Prev}}"/>
+                        <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-l shadow">
+                            &lt; Prev
+                        </button>
+                    </form>
+                {{end}}
+                {{if eq .Pager.Total .Pager.Tail}}
+                    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-r shadow opacity-50 cursor-not-allowed"
+                            disabled>
+                        Next &gt;
                     </button>
-                </form>
-            {{end}}
-            {{if eq .Pager.Total .Pager.Tail}}
-                <button disabled
-                        class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow opacity-50 cursor-not-allowed">
-                    Next
-                </button>
-            {{else}}
-                <form method="get" action="" class="inline-block">
-                    {{range $k, $vs := .Pager.Queries}}
-                        {{if ne $k "page"}}
-                            {{range $vs}}
-                                <input type="hidden" name="{{$k}}" value="{{.}}"/>
+                {{else}}
+                    <form method="get" action="" class="inline-block">
+                        {{range $k, $vs := .Pager.Queries}}
+                            {{if ne $k "page"}}
+                                {{range $vs}}
+                                    <input type="hidden" name="{{$k}}" value="{{.}}"/>
+                                {{end}}
                             {{end}}
                         {{end}}
-                    {{end}}
-                    <input type="hidden" name="page" value="{{.Pager.Next}}"/>
-                    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow">
-                        Next
-                    </button>
-                </form>
-            {{end}}
+                        <input type="hidden" name="page" value="{{.Pager.Next}}"/>
+                        <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-r shadow">
+                            Next &gt;
+                        </button>
+                    </form>
+                {{end}}
+            </div>
         </div>
     {{else}}
         <p>WARNING: No reports found.</p>
