@@ -434,7 +434,7 @@
                         },
                         {
                             label: "Upload Throughput (Mbps)",
-                            data: histories.map(h => h["upload_bps"] ? h["upload_bps"] * 1000 : null),
+                            data: histories.map(h => h["upload_bps"] ? h["upload_bps"] / 1000 : null),
                             backgroundColor: "rgba(255, 159, 64, 0.2)",
                             borderColor: "rgba(255, 159, 64, 1)",
                             fill: false,
@@ -445,7 +445,7 @@
                         },
                         {
                             label: "Download Throughput (Mbps)",
-                            data: histories.map(h => h["download_bps"] ? h["download_bps"] * 1000 : null),
+                            data: histories.map(h => h["download_bps"] ? h["download_bps"] / 1000 : null),
                             backgroundColor: "rgba(75, 192, 192, 0.2)",
                             borderColor: "rgba(75, 192, 192, 1)",
                             fill: false,
