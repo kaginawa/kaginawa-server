@@ -1,7 +1,7 @@
 {{template "header" .Meta}}
 <div class="container mx-auto py-4">
     {{if .Reports}}
-        <table class="table-auto">
+        <table class="table-auto mx-auto">
             <caption hidden>List of Reports</caption>
             <thead>
             <tr>
@@ -9,11 +9,11 @@
                 <th class="px-1 py-1" scope="col">Custom ID</th>
                 <th class="px-1 py-1" scope="col">Hostname</th>
                 <th class="px-1 py-1" scope="col">Received Time</th>
-                <th class="px-1 py-1" scope="col">Connected Server</th>
-                <th class="px-1 py-1" scope="col">Global IP</th>
-                <th class="px-1 py-1" scope="col">Local IP</th>
+                <th class="px-1 py-1 hidden lg:table-cell" scope="col">Connected Server</th>
+                <th class="px-1 py-1 hidden lg:table-cell" scope="col">Global IP</th>
+                <th class="px-1 py-1 hidden lg:table-cell" scope="col">Local IP</th>
                 <th class="px-1 py-1" scope="col">Seq</th>
-                <th class="px-1 py-1" scope="col">Version</th>
+                <th class="px-1 py-1 hidden lg:table-cell" scope="col">Version</th>
                 <th class="px-1 py-1" scope="col">Result</th>
             </tr>
             </thead>
@@ -29,15 +29,16 @@
                     <td class="border px-1 py-1 {{if $alive}}text-green-700{{else}}text-gray-600{{end}}">
                         {{t_fmt .ServerTime "2006/1/2 15:04:05"}}
                     </td>
-                    <td class="border px-1 py-1">
+                    <td class="border px-1 py-1 hidden lg:table-cell">
                         {{if .SSHRemotePort}}{{.SSHServerHost}}:{{.SSHRemotePort}}{{else}}N/A{{end}}
                     </td>
-                    <td class="border px-1 py-1" title="{{if .GlobalHost}}{{.GlobalHost}}{{else}}{{.GlobalIP}}{{end}}">
+                    <td class="border px-1 py-1 hidden lg:table-cell"
+                        title="{{if .GlobalHost}}{{.GlobalHost}}{{else}}{{.GlobalIP}}{{end}}">
                         {{.GlobalIP}}
                     </td>
-                    <td class="border px-1 py-1">{{.LocalIPv4}}</td>
+                    <td class="border px-1 py-1 hidden lg:table-cell">{{.LocalIPv4}}</td>
                     <td class="border px-1 py-1">{{.Sequence}}</td>
-                    <td class="border px-1 py-1">{{.AgentVersion}}</td>
+                    <td class="border px-1 py-1 hidden lg:table-cell">{{.AgentVersion}}</td>
                     <td class="border px-1 py-1">
                         {{if .Errors}}
                             <span class="text-red-600">
@@ -50,8 +51,11 @@
                 </tr>
             {{end}}
             </tbody>
+            <caption style="caption-side: bottom">
+                Showing <strong>{{.Pager.Head}}</strong> to <strong>{{.Pager.Tail}}</strong>,
+                Total <strong>{{.Pager.Total}}</strong>
+            </caption>
         </table>
-        <div>Showing {{.Pager.Head}} to {{.Pager.Tail}}, Total {{.Pager.Total}}</div>
         <div class="text-center py-1">
             <div class="inline-flex">
                 {{if eq .Pager.Current 1}}
