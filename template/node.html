@@ -1,5 +1,5 @@
 {{template "header" .Meta}}
-<script src="https://cdn.jsdelivr.net/npm/moment@2.24.0/moment.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/moment@2.25.3/moment.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.js"></script>
 <style>
     .loader {
@@ -27,8 +27,9 @@
         </button>
     </a>
     <h2 class="text-2xl font-bold">{{.Report.ID}}{{if .Report.CustomID}} / {{.Report.CustomID}}{{end}}</h2>
-    <div id="chart-loading" style="position: absolute; left: 0; right: 0; margin: 50px auto;"></div>
+    <div id="chart-loading" class="absolute left-0 right-0 mx-auto mt-16"></div>
     <canvas id="network-chart" width="400" height="80" style="min-height: 160px"></canvas>
+    <p id="network-summary" class="text-sm text-center my-2"></p>
     <div class="text-center">
         <div class="inline-flex">
             <button id="prev-button" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded-l">
@@ -354,6 +355,7 @@
     const chartLoading = document.getElementById("chart-loading");
     const prevButton = document.getElementById("prev-button");
     const nextButton = document.getElementById("next-button");
+    const networkSummary = document.getElementById("network-summary");
     let page = 1;
     let chart = null;
 
@@ -388,34 +390,76 @@
     }
 
     function noData(ctx) {
+        ctx.clearRect(0, 0, 400, 100);
         ctx.fillStyle = "gray";
         ctx.font = "15px sans serif";
         ctx.textAlign = "center";
         ctx.fillText("No Data", 200, 75);
     }
 
+    function updateNetworkSummary(histories) {
+        let nLatency = 0, sumLatency = 0,
+            nUpThroughput = 0, sumUpThroughput = 0,
+            nDownThroughput = 0, sumDownThroughput = 0;
+        histories.forEach(h => {
+            if (h["rtt_ms"]) {
+                nLatency++;
+                sumLatency += h["rtt_ms"];
+            }
+            if (h["upload_bps"]) {
+                nUpThroughput++;
+                sumUpThroughput += h["upload_bps"];
+            }
+            if (h["download_bps"]) {
+                nDownThroughput++;
+                sumDownThroughput += h["download_bps"];
+            }
+        });
+        let text = "";
+        if (nLatency > 0 && nUpThroughput > 0 && nDownThroughput > 0) {
+            let avgLatency = (sumLatency / nLatency).toFixed(0);
+            let avgUpThroughput = (sumUpThroughput / nUpThroughput / 1000).toFixed(1);
+            let avgDownThroughput = (sumDownThroughput / nDownThroughput / 1000).toFixed(1);
+            text = "Avg. Round Trip Time: <strong>" + avgLatency + "ms</strong>" +
+                " / Avg. Upload: <strong>" + avgUpThroughput + "Mbps</strong>" +
+                " / Avg. Download: <strong>" + avgDownThroughput + "Mbps</strong>";
+        } else if (nLatency > 0) {
+            text = "Avg. Round Trip Time: <strong>" + (sumLatency / nLatency).toFixed(0) + "ms</strong>" +
+                " <small>(Throughput measurement is disabled)</small>";
+        }
+        networkSummary.innerHTML = text;
+    }
+
     function networkQualityChart() {
+        const chartElm = document.getElementById('network-chart');
+        const ctx = chartElm.getContext('2d');
+        if (chart !== null) {
+            ctx.globalAlpha = 0.8;
+            ctx.fillStyle = "rgb(255, 255, 255)";
+            ctx.fillRect(0, 0, chartElm.width, chartElm.height);
+        }
         chartLoading.classList.add('loader');
         const end = moment().subtract((page - 1) * daysPerPage, 'days');
         const begin = moment().subtract(page * daysPerPage, 'days');
-        const ctx = document.getElementById('network-chart').getContext('2d');
         const request = new XMLHttpRequest();
         request.open("GET", "/nodes/" + nodeId + "/histories?projection=measurement&begin=" + begin.unix() + '&end=' + end.unix());
         request.addEventListener("load", (event) => {
             chartLoading.classList.remove('loader');
+            if (chart !== null) {
+                chart.destroy();
+            }
             if (event.target["status"] !== 200) {
                 console.error(`[net_chart] ${event.target["status"]}: ${event.target["statusText"]}`);
                 noData(ctx);
                 return;
             }
-            const result = JSON.parse(event.target["responseText"]);
-            const histories = fillEmpty(begin, end, (result ? result : []).map(h => {
+            let result = JSON.parse(event.target["responseText"]);
+            result = result ? result : [];
+            updateNetworkSummary(result);
+            const histories = fillEmpty(begin, end, (result).map(h => {
                 h.timestamp = moment(h["server_time"] * 1000);
                 return h
             }));
-            if (chart !== null) {
-                chart.destroy();
-            }
             chart = new Chart(ctx, {
                 type: "line",
                 data: {
@@ -423,10 +467,10 @@
                     datasets: [
                         {
                             label: "Round Trip Time (ms)",
-                            type: "bar",
                             data: histories.map(h => h["rtt_ms"] > 0 ? h["rtt_ms"] : null),
                             backgroundColor: "rgba(54, 162, 235, 0.5)",
                             borderColor: "rgba(54, 162, 235, 0.5)",
+                            fill: true,
                             pointRadius: 0,
                             pointHoverRadius: 2,
                             borderWidth: 1,
@@ -462,6 +506,8 @@
                             fill: true,
                             pointRadius: 0,
                             borderWidth: 0,
+                            lineTension: 0,
+                            steppedLine: 'middle',
                             yAxisID: "no-data",
                         },
                     ]
