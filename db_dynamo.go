@@ -401,6 +401,7 @@ func (db *DynamoDB) applyProjection(builder expression.Builder, projection Proje
 			expression.Name("RTTMills"),
 			expression.Name("UploadKBPS"),
 			expression.Name("DownloadKBPS"),
+			expression.Name("Success"),
 		))
 	}
 	return builder

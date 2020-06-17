@@ -294,6 +294,7 @@ func (db *MongoDB) applyProjection(opts *options.FindOptions, projection Project
 			{"rtt_ms", 1},
 			{"upload_bps", 1},
 			{"download_bps", 1},
+			{"success", 1},
 		}
 	}
 	return opts
