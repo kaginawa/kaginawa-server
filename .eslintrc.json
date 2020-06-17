@@ -1,0 +1,34 @@
+{
+  "parserOptions": {
+    "ecmaVersion": 6
+  },
+  "rules": {
+    "quotes": [
+      "error",
+      "double"
+    ],
+    "semi": [
+      "error",
+      "always"
+    ]
+  },
+  "env": {
+    "browser": true
+  },
+  "globals": {
+    "Chart": "readonly",
+    "moment": "readonly"
+  },
+  "extends": [
+    "eslint:recommended"
+  ],
+  "plugins": [
+    "html"
+  ],
+  "settings": {
+    "html/html-extensions": [
+      ".html"
+    ],
+    "html/report-bad-indent": "error"
+  }
+}

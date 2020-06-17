@@ -12,6 +12,7 @@ test: ## Tests all code
 lint: ## Runs static code analysis
 	command -v golint >/dev/null 2>&1 || { GO111MODULE=on go get -u golang.org/x/lint/golint; }
 	go list ./... | xargs -L1 golint -set_exit_status
+	npm run lint
 
 .PHONY: run
 run: ## Run web application locally
