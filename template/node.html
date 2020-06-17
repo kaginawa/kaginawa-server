@@ -1,6 +1,6 @@
 {{template "header" .Meta}}
-<script src="https://cdn.jsdelivr.net/npm/moment@2.25.3/moment.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/chart.js@2.9.3/dist/Chart.min.js"></script>
+<script src="/assets/js/moment-2.25.3.min.js"></script>
+<script src="/assets/js/chart-2.9.3.min.js"></script>
 <style>
     .loader {
         border: 16px solid #f3f3f3;
@@ -366,7 +366,7 @@
         for (let i = 0; ; i++) {
             const next = errorTimelineBegin.clone().add(i * 10, "minutes");
             if (next.isAfter(end)) {
-                break
+                break;
             }
             let noData = true;
             for (let j = 0; j < histories.length; j++) {
@@ -374,19 +374,19 @@
                 const upperLimit = histories[j].timestamp.clone().add(10, "minutes");
                 if (next.isSameOrAfter(lowerLimit) && next.isSameOrBefore(upperLimit)) {
                     noData = false;
-                    break
+                    break;
                 }
             }
             if (noData) {
                 timeline.push({
                     timestamp: next,
                     noData: true
-                })
+                });
             }
         }
         return histories.concat(timeline).sort((a, b) => {
-            return a.timestamp.diff(b.timestamp)
-        })
+            return a.timestamp.diff(b.timestamp);
+        });
     }
 
     function noData(ctx) {
@@ -431,20 +431,20 @@
     }
 
     function networkQualityChart() {
-        const chartElm = document.getElementById('network-chart');
-        const ctx = chartElm.getContext('2d');
+        const chartElm = document.getElementById("network-chart");
+        const ctx = chartElm.getContext("2d");
         if (chart !== null) {
             ctx.globalAlpha = 0.8;
             ctx.fillStyle = "rgb(255, 255, 255)";
             ctx.fillRect(0, 0, chartElm.width, chartElm.height);
         }
-        chartLoading.classList.add('loader');
-        const end = moment().subtract((page - 1) * daysPerPage, 'days');
-        const begin = moment().subtract(page * daysPerPage, 'days');
+        chartLoading.classList.add("loader");
+        const end = moment().subtract((page - 1) * daysPerPage, "days");
+        const begin = moment().subtract(page * daysPerPage, "days");
         const request = new XMLHttpRequest();
-        request.open("GET", "/nodes/" + nodeId + "/histories?projection=measurement&begin=" + begin.unix() + '&end=' + end.unix());
+        request.open("GET", "/nodes/" + nodeId + "/histories?projection=measurement&begin=" + begin.unix() + "&end=" + end.unix());
         request.addEventListener("load", (event) => {
-            chartLoading.classList.remove('loader');
+            chartLoading.classList.remove("loader");
             if (chart !== null) {
                 chart.destroy();
             }
@@ -458,7 +458,7 @@
             updateNetworkSummary(result);
             const histories = fillEmpty(begin, end, (result).map(h => {
                 h.timestamp = moment(h["server_time"] * 1000);
-                return h
+                return h;
             }));
             chart = new Chart(ctx, {
                 type: "line",
@@ -507,7 +507,7 @@
                             pointRadius: 0,
                             borderWidth: 0,
                             lineTension: 0,
-                            steppedLine: 'middle',
+                            steppedLine: "middle",
                             yAxisID: "no-data",
                         },
                     ]

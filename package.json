@@ -1,0 +1,17 @@
+{
+  "name": "kaginawa-server",
+  "license": "BSD-3-Clause",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kaginawa/kaginawa-server.git"
+  },
+  "scripts": {
+    "lint": "eslint template/*",
+    "fmt": "eslint --fix template/*"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "eslint": "^7.2.0",
+    "eslint-plugin-html": "^6.0.2"
+  }
+}
