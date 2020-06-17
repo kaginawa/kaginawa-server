@@ -20,7 +20,7 @@ jobs:
       run: |
         go get -v -t -d ./...
     - name: Build
-      run: make build
+      run: go build -v ./cmd/server
     - name: Test
       run: make test
     - name: Lint
