@@ -23,15 +23,15 @@ We tested [Auth0](https://auth0.com/) as a provider.
 
 Required environment variables for OAuth 2.0 authorization:
 
-- `OAUTH_DOMAIN` or `AUTH0_DOMAIN`: OAuth 2.0 provider domain name (e.g. `xxx.auth0.com`)
-- `OAUTH_CLIENT_ID` or `AUTH0_CLIENT_ID`: OAuth 2.0 provider client ID
-- `OAUTH_CLIENT_SECRET` or `AUTH0_CLIENT_SECRET`: OAuth 2.0 provider client secret
-- `SELF_URL`: Self URL using OAuth 2.0 callback process (e.g. `http://localhost:8080`)
+- `OAUTH_DOMAIN` or `AUTH0_DOMAIN` - OAuth 2.0 provider domain name (e.g. `xxx.auth0.com`)
+- `OAUTH_CLIENT_ID` or `AUTH0_CLIENT_ID` - OAuth 2.0 provider client ID
+- `OAUTH_CLIENT_SECRET` or `AUTH0_CLIENT_SECRET` - OAuth 2.0 provider client secret
+- `SELF_URL` - Self URL using OAuth 2.0 callback process (e.g. `http://localhost:8080`)
 
-By default, user sessions are stored into RAM.
+By default, user sessions are store into RAM.
 You can specify Redis URL to replace it. This is recommended for production use.
 
-- `REDIS_URL`: Redis URL (format: `redis://user:password@hostname:port`)
+- `REDIS_URL` - Redis URL (format: `redis://user:password@hostname:port`)
 
 ### Using MongoDB
 
@@ -55,15 +55,15 @@ See the comment of [AWS SDK for Go API Reference](https://docs.aws.amazon.com/sd
 
 Environment variables:
 
-- `DYNAMO_KEYS`: Name of table of keys (e.g. `KaginawaKeys`)
-- `DYNAMO_SERVERS`: Name of table of servers (e.g. `KaginawaServers`)
-- `DYNAMO_NODES`: Name of table of nodes (e.g. `KaginawaNodes`)
-- `DYNAMO_LOGS`: Name of table of logs (e.g. `KaginawaLogs`)
-- `DYNAMO_CUSTOM_IDS`: Name of index of custom id (e.g. `CustomID-index`)
-- `DYNAMO_TTL_DAYS`: (Optional) TTL for table of logs 
-- `DYNAMO_ENDPOINT`: (Optional) Custom endpoint (i.e. using DynamoDB Local)
+- `DYNAMO_KEYS` - Name of table of keys (e.g. `KaginawaKeys`)
+- `DYNAMO_SERVERS` - Name of table of servers (e.g. `KaginawaServers`)
+- `DYNAMO_NODES` - Name of table of nodes (e.g. `KaginawaNodes`)
+- `DYNAMO_LOGS` - Name of table of logs (e.g. `KaginawaLogs`)
+- `DYNAMO_CUSTOM_IDS` - Name of index of custom id (e.g. `CustomID-index`)
+- `DYNAMO_TTL_DAYS` - (Optional) TTL for the table of logs 
+- `DYNAMO_ENDPOINT` - (Optional) Custom endpoint (i.e. using DynamoDB Local)
 
-Create table of keys using aws-cli:
+Create a table of keys using aws-cli:
 
 ```
 aws dynamodb create-table \
@@ -73,7 +73,7 @@ aws dynamodb create-table \
     --provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1
 ```
 
-Create table of servers using aws-cli:
+Create a table of servers using aws-cli:
 
 ```
 aws dynamodb create-table \
@@ -83,7 +83,7 @@ aws dynamodb create-table \
     --provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1
 ```
 
-Create table of nodes using aws-cli:
+Create a table of nodes using aws-cli:
 
 ```
 aws dynamodb create-table \
@@ -93,7 +93,7 @@ aws dynamodb create-table \
     --provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1
 ```
 
-Create table of logs using aws-cli:
+Create a table of logs using aws-cli:
 
 ```
 aws dynamodb create-table \
@@ -105,7 +105,7 @@ aws dynamodb create-table \
     --provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1
 ```
 
-Create index of custom ID for table of nodes using aws-cli:
+Create an index of custom ID for a table of nodes using aws-cli:
 
 ```
 aws dynamodb update-table \
@@ -143,7 +143,7 @@ Curl example with `custom-id`:
 curl -H "Authorization: token admin123" -H "Accept: application/json" -X GET "http://localhost:8080/nodes?custom-id=dev1"
 ```
 
-NOTE: Custom IDs are expected to be unique, but can be duplicated (such as device replacements).
+NOTE: Custom IDs are expect to unique, but can be duplicated (such as device replacements).
 
 Curl example with `custom-id` and `minutes`:
 
