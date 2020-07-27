@@ -5,7 +5,7 @@ module github.com/kaginawa/kaginawa-server
 go 1.13
 
 require (
-	github.com/aws/aws-sdk-go v1.32.1
+	github.com/aws/aws-sdk-go v1.33.12
 	github.com/garyburd/redigo v1.6.0 // indirect
 	github.com/gorilla/mux v1.7.4
 	github.com/gorilla/sessions v1.2.0
