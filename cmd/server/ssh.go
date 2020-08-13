@@ -15,7 +15,12 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-const defaultTimeoutSec = 30
+const (
+	defaultTimeoutSec = 30
+	eofRetries        = 3
+)
+
+var errEOF = errors.New("EOF")
 
 type commandResponse struct {
 	data []byte
@@ -121,11 +126,25 @@ func handleCommand(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "SSH server configuration error", http.StatusServiceUnavailable)
 		return
 	}
-	resp, err := execWithTimeout(server, report, serverConfig, targetConfig, command, timeout)
-	if err != nil {
-		log.Print(err)
-		http.Error(w, err.Error(), http.StatusServiceUnavailable)
-		return
+	var resp []byte
+	eofCount := 0
+	for {
+		resp, err = execWithTimeout(server, report, serverConfig, targetConfig, command, timeout)
+		if err != nil {
+			if err == errEOF {
+				eofCount++
+				if eofCount >= eofRetries {
+					log.Printf("EOF occurred %d times", eofCount)
+					http.Error(w, fmt.Sprintf("EOF occurred %d times", eofCount), http.StatusServiceUnavailable)
+					return
+				}
+				continue
+			}
+			log.Print(err)
+			http.Error(w, err.Error(), http.StatusServiceUnavailable)
+			return
+		}
+		break
 	}
 	if browser {
 		handleNodeWeb(w, r, id, user, password, string(resp))
@@ -188,6 +207,9 @@ func exec(s kaginawa.SSHServer, r *kaginawa.Report, sc, tc *ssh.ClientConfig, cm
 	}
 	c, nc, req, err := ssh.NewClientConn(target, targetAddr, tc)
 	if err != nil {
+		if strings.HasSuffix(err.Error(), "EOF") {
+			return commandResponse{err: errEOF}
+		}
 		return commandResponse{err: fmt.Errorf("failed to open target ssh connection %s: %w", r.ID, err)}
 	}
 	client := ssh.NewClient(c, nc, req)
