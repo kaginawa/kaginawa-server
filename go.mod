@@ -8,7 +8,7 @@ require (
 	github.com/aws/aws-sdk-go v1.34.3
 	github.com/garyburd/redigo v1.6.0 // indirect
 	github.com/gorilla/mux v1.7.4
-	github.com/gorilla/sessions v1.2.0
+	github.com/gorilla/sessions v1.2.1
 	github.com/quasoft/memstore v0.0.0-20191010062613-2bce066d2b0b
 	go.mongodb.org/mongo-driver v1.4.0
 	golang.org/x/crypto v0.0.0-20190530122614-20be4c3c3ed5
