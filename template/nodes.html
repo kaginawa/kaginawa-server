@@ -8,7 +8,7 @@
                     {{range $k, $vs := $q}}
                         {{range $vs}}
                             <span class="inline-block bg-gray-200 rounded-full px-3 py-1 text-sm font-semibold text-gray-700 mr-2 mb-2">
-                                {{$k}}: <b>{{.}}</b>
+                                {{$k}}: <strong>{{.}}</strong>
                                 <form method="get" action="" class="inline-block">
                                     {{range $k2, $vs2 := $q}}
                                         {{if ne $k2 $k}}
