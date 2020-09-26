@@ -55,14 +55,7 @@ func handleReport(w http.ResponseWriter, r *http.Request) {
 	log.Printf("REPORT from %s %s %d", report.ID, report.CustomID, report.SSHRemotePort)
 
 	// Pick global IP
-	forwardedFor := r.Header.Get("X-Forwarded-For")
-	if len(forwardedFor) > 0 {
-		list := strings.Split(forwardedFor, ",")
-		report.GlobalIP = list[len(list)-1]
-	}
-	if len(report.GlobalIP) == 0 {
-		report.GlobalIP = trimPort(r.RemoteAddr)
-	}
+	report.GlobalIP = remoteIP(r)
 
 	// Reverse lookup
 	if len(report.GlobalIP) > 0 {

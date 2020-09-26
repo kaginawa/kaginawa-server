@@ -408,6 +408,7 @@ func (db *DynamoDB) applyProjection(builder expression.Builder, projection Proje
 			expression.Name("GlobalIP"),
 			expression.Name("GlobalHost"),
 			expression.Name("LocalIPv4"),
+			expression.Name("LocalIPv6"),
 			expression.Name("Sequence"),
 			expression.Name("AgentVersion"),
 			expression.Name("Success"),

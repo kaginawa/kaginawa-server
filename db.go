@@ -53,7 +53,7 @@ type DB interface {
 	ListReports(skip, limit, minutes int, projection Projection) ([]Report, error)
 	// CountAndListReports scans list of reports with total count.
 	CountAndListReports(skip, limit, minutes int, projection Projection) ([]Report, int, error)
-	// GetReportByID queries a report by id.
+	// GetReportByID queries a report by id. Returns (nil, nil) if not found.
 	GetReportByID(id string) (*Report, error)
 	// ListReportsByCustomID queries list of reports by custom id.
 	ListReportsByCustomID(customID string, minutes int, projection Projection) ([]Report, error)

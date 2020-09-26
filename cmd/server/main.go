@@ -75,6 +75,7 @@ func main() {
 	r.HandleFunc("/callback", handleOAuthLoginCallback)
 	r.HandleFunc("/logout", handleOAuthLogout)
 	r.HandleFunc("/logout-complete", handleOAuthLogoutComplete)
+	r.HandleFunc("/find", handleFind)
 	r.HandleFunc("/nodes", handleNodes)
 	r.HandleFunc("/nodes/{id}", handleNode)
 	r.HandleFunc("/nodes/{id}/command", handleCommand)

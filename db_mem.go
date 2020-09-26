@@ -142,7 +142,7 @@ func (db *MemDB) ListReports(skip, limit, _ int, _ Projection) ([]Report, error)
 }
 
 // CountAndListReports implements same signature of the DB interface.
-func (db *MemDB) CountAndListReports(skip, limit, minutes int, projection Projection) ([]Report, int, error) {
+func (db *MemDB) CountAndListReports(skip, limit, _ int, _ Projection) ([]Report, int, error) {
 	db.nodesMutex.RLock()
 	defer db.nodesMutex.RUnlock()
 	var slice []Report
