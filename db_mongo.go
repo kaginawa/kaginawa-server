@@ -292,6 +292,7 @@ func (db *MongoDB) applyProjection(opts *options.FindOptions, projection Project
 			{"ip_global", 1},
 			{"host_global", 1},
 			{"ip4_local", 1},
+			{"ip6_local", 1},
 			{"seq", 1},
 			{"agent_version", 1},
 			{"success", 1},

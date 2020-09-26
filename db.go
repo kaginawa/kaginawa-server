@@ -53,7 +53,7 @@ type DB interface {
 	ListReports(skip, limit, minutes int, projection Projection) ([]Report, error)
 	// CountAndListReports scans list of reports with total count.
 	CountAndListReports(skip, limit, minutes int, projection Projection) ([]Report, int, error)
-	// GetReportByID queries a report by id.
+	// GetReportByID queries a report by id. Returns (nil, nil) if not found.
 	GetReportByID(id string) (*Report, error)
 	// ListReportsByCustomID queries list of reports by custom id.
 	ListReportsByCustomID(customID string, minutes int, projection Projection) ([]Report, error)
@@ -165,4 +165,33 @@ type USBDevice struct {
 	VendorID  string `json:"vendor_id,omitempty" bson:"vendor_id"`
 	ProductID string `json:"product_id,omitempty" bson:"product_id"`
 	Location  string `json:"location,omitempty" bson:"location"`
+}
+
+// MatchReports generates list of reports filtered by specified matcher function.
+func MatchReports(db DB, minutes int, projection Projection, matcher func(r Report) bool) ([]Report, error) {
+	reports, err := db.ListReports(0, 0, minutes, projection)
+	if err != nil {
+		return nil, err
+	}
+	var matches []Report
+	for _, report := range reports {
+		if matcher(report) {
+			matches = append(matches, report)
+		}
+	}
+	return matches, nil
+}
+
+// SubReports generates subsets of source reports.
+func SubReports(reports []Report, skip, limit int) (sub []Report) {
+	for i, report := range reports {
+		if i < skip {
+			continue
+		}
+		if limit > 0 && len(sub) >= limit {
+			break
+		}
+		sub = append(sub, report)
+	}
+	return
 }

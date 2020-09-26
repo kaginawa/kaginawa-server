@@ -120,7 +120,7 @@ func handleOAuthLoginCallback(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
-	http.Redirect(w, r, "/nodes", http.StatusSeeOther)
+	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
 func handleOAuthLogoutComplete(w http.ResponseWriter, r *http.Request) {

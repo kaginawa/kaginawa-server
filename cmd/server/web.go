@@ -54,6 +54,13 @@ var (
 	}
 )
 
+type indexParams struct {
+	Meta       meta
+	RemoteIP   string
+	RemoteHost string
+	FindError  string
+}
+
 type meta struct {
 	Title         string
 	UserName      string
@@ -80,6 +87,18 @@ func initTemplate(dir string) {
 	}
 }
 
+func remoteIP(r *http.Request) (ip string) {
+	forwardedFor := r.Header.Get("X-Forwarded-For")
+	if len(forwardedFor) > 0 {
+		list := strings.Split(forwardedFor, ",")
+		ip = list[len(list)-1]
+	}
+	if len(ip) == 0 {
+		ip = trimPort(r.RemoteAddr)
+	}
+	return
+}
+
 // handleIndex handles index requests.
 //
 // - Method: GET or HEAD
@@ -91,10 +110,16 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 		return
 	}
-	execTemplate(w, "index", struct {
-		Meta meta
-	}{
+	ip := remoteIP(r)
+	host, err := reverseLookup(ip)
+	if err != nil {
+		log.Printf("failed to execute reverse lookup for %s: %v", ip, err)
+	}
+	execTemplate(w, "index", indexParams{
 		newMeta(r, "Welcome"),
+		ip,
+		host,
+		"",
 	})
 }
 
@@ -106,6 +131,124 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 // - Response: File
 func handleFavicon(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, "assets/favicon.ico")
+}
+
+// handleFind handles node finding requests.
+//
+// - Method: POST
+// - Client: Browser
+// - Access: Admin
+// - Response: 303 redirect
+func handleFind(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+	if !getSession(r).isLoggedIn() {
+		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		log.Printf("failed to parse form: %v", err)
+		http.Error(w, "Invalid form", http.StatusBadRequest)
+		return
+	}
+	findBy := r.FormValue("find-by")
+	findString := strings.TrimSpace(r.FormValue("find-string"))
+	if len(findString) == 0 {
+		handleFindError(w, r, "Please input find string")
+		return
+	}
+	switch findBy {
+	case "id":
+		report, err := db.GetReportByID(findString)
+		if err != nil {
+			handleFindError(w, r, "Database unavailable")
+			return
+		}
+		if report == nil {
+			handleFindError(w, r, "Not found: "+findString)
+			return
+		}
+		http.Redirect(w, r, "/nodes/"+report.ID, http.StatusSeeOther)
+	case "custom-id":
+		reports, err := db.ListReportsByCustomID(findString, -1, kaginawa.IDAttributes)
+		if err != nil {
+			handleFindError(w, r, "Database unavailable")
+			return
+		}
+		if len(reports) == 0 {
+			handleFindError(w, r, "Not found: "+findString)
+			return
+		}
+		http.Redirect(w, r, "/nodes?custom-id="+findString, http.StatusSeeOther)
+	case "hostname":
+		matches, err := kaginawa.MatchReports(db, 0, kaginawa.ListViewAttributes, func(r kaginawa.Report) bool {
+			return r.Hostname == findString
+		})
+		if err != nil {
+			handleFindError(w, r, "Database unavailable")
+			return
+		}
+		handleFindResult(w, r, findBy, findString, matches)
+	case "global-addr":
+		matches, err := kaginawa.MatchReports(db, 0, kaginawa.ListViewAttributes, func(r kaginawa.Report) bool {
+			return r.GlobalIP == findString || r.GlobalHost == findString
+		})
+		if err != nil {
+			handleFindError(w, r, "Database unavailable")
+			return
+		}
+		handleFindResult(w, r, findBy, findString, matches)
+	case "local-addr":
+		matches, err := kaginawa.MatchReports(db, 0, kaginawa.ListViewAttributes, func(r kaginawa.Report) bool {
+			return r.LocalIPv4 == findString || r.LocalIPv6 == findString
+		})
+		if err != nil {
+			handleFindError(w, r, "Database unavailable")
+			return
+		}
+		handleFindResult(w, r, findBy, findString, matches)
+	case "version":
+		if !strings.HasPrefix(findString, "v") {
+			findString = "v" + findString
+		}
+		matches, err := kaginawa.MatchReports(db, 0, kaginawa.ListViewAttributes, func(r kaginawa.Report) bool {
+			return r.AgentVersion == findString
+		})
+		if err != nil {
+			handleFindError(w, r, "Database unavailable")
+			return
+		}
+		handleFindResult(w, r, findBy, findString, matches)
+	default:
+		handleFindError(w, r, "Unknown option: "+findBy)
+	}
+}
+
+func handleFindError(w http.ResponseWriter, r *http.Request, msg string) {
+	ip := remoteIP(r)
+	host, err := reverseLookup(ip)
+	if err != nil {
+		log.Printf("failed to execute reverse lookup for %s: %v", ip, err)
+	}
+	execTemplate(w, "index", indexParams{
+		newMeta(r, "Welcome"),
+		ip,
+		host,
+		msg,
+	})
+}
+
+func handleFindResult(w http.ResponseWriter, r *http.Request, findBy, findString string, matches []kaginawa.Report) {
+	switch len(matches) {
+	case 0:
+		handleFindError(w, r, "Not found: "+findString)
+	case 1:
+		http.Redirect(w, r, "/nodes/"+matches[0].ID, http.StatusSeeOther)
+	default:
+		http.Redirect(w, r, "/nodes?"+findBy+"="+findString, http.StatusSeeOther)
+	}
 }
 
 // handleNodes handles list of nodes requests.
@@ -133,20 +276,83 @@ func handleNodesWeb(w http.ResponseWriter, r *http.Request) {
 	}
 	page := page(r)
 	limit := limit(r)
-	reports, count, err := db.CountAndListReports((page - 1) * limit, limit, 0, kaginawa.ListViewAttributes)
-	if err != nil {
-		log.Printf("failed to list reports: %v", err)
-		http.Error(w, "Database unavailable", http.StatusInternalServerError)
-		return
+	offset := (page - 1) * limit
+	customID := r.URL.Query().Get("custom-id")
+	hostname := r.URL.Query().Get("hostname")
+	globalAddr := r.URL.Query().Get("global-addr")
+	localAddr := r.URL.Query().Get("local-addr")
+	version := r.URL.Query().Get("version")
+	minutesStr := r.URL.Query().Get("minutes")
+	minutes := 0
+	var err error
+	if len(minutesStr) > 0 {
+		minutes, err = strconv.Atoi(minutesStr)
+		if err != nil {
+			http.Error(w, "Invalid parameter: minutes = "+minutesStr, http.StatusBadRequest)
+			return
+		}
+	}
+	filtered := minutes > 0
+	var reports []kaginawa.Report
+	var count int
+	if len(customID+hostname+globalAddr+localAddr+version) == 0 {
+		reports, count, err = db.CountAndListReports(offset, limit, minutes, kaginawa.ListViewAttributes)
+		if err != nil {
+			log.Printf("failed to list reports: %v", err)
+			http.Error(w, "Database unavailable", http.StatusInternalServerError)
+			return
+		}
+	} else if len(customID) > 0 && len(hostname+globalAddr+localAddr+version) == 0 {
+		matches, err := db.ListReportsByCustomID(customID, minutes, kaginawa.ListViewAttributes)
+		if err != nil {
+			log.Printf("failed to list reports: %v", err)
+			http.Error(w, "Database unavailable", http.StatusInternalServerError)
+			return
+		}
+		count = len(matches)
+		reports = kaginawa.SubReports(matches, offset, limit)
+		filtered = true
+	} else {
+		if !strings.HasPrefix(version, "v") {
+			version = "v" + version
+		}
+		matches, err := kaginawa.MatchReports(db, minutes, kaginawa.ListViewAttributes, func(r kaginawa.Report) bool {
+			if len(customID) > 0 && r.CustomID == customID {
+				return true
+			}
+			if len(hostname) > 0 && r.Hostname == hostname {
+				return true
+			}
+			if len(globalAddr) > 0 && (r.GlobalIP == globalAddr || r.GlobalHost == globalAddr) {
+				return true
+			}
+			if len(localAddr) > 0 && (r.LocalIPv4 == localAddr || r.LocalIPv6 == localAddr) {
+				return true
+			}
+			if len(version) > 0 && r.AgentVersion == version {
+				return true
+			}
+			return false
+		})
+		if err != nil {
+			log.Printf("failed to list reports: %v", err)
+			http.Error(w, "Database unavailable", http.StatusInternalServerError)
+			return
+		}
+		count = len(matches)
+		reports = kaginawa.SubReports(matches, offset, limit)
+		filtered = true
 	}
 	execTemplate(w, "nodes", struct {
-		Meta    meta
-		Pager   Pager
-		Reports []kaginawa.Report
+		Meta     meta
+		Pager    Pager
+		Reports  []kaginawa.Report
+		Filtered bool
 	}{
 		newMeta(r, "List of Nodes"),
 		newPager(count, len(reports), page, limit, r.URL.Query()),
 		reports,
+		filtered,
 	})
 }
 
