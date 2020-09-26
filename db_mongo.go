@@ -199,7 +199,10 @@ func (db *MongoDB) CountReports() (int, error) {
 
 // ListReports implements same signature of the DB interface.
 func (db *MongoDB) ListReports(skip, limit, minutes int, projection Projection) ([]Report, error) {
-	opts := &options.FindOptions{Sort: bson.M{"custom_id": 1}, Skip: int64p(skip), Limit: int64p(limit)}
+	opts := &options.FindOptions{Sort: bson.M{"custom_id": 1}, Skip: int64p(skip)}
+	if limit > 0 {
+		opts.Limit = int64p(limit)
+	}
 	opts = db.applyProjection(opts, projection)
 	filter := bson.M{}
 	if minutes > 0 {
@@ -212,6 +215,16 @@ func (db *MongoDB) ListReports(skip, limit, minutes int, projection Projection) 
 	}
 	defer db.safeClose(cur)
 	return db.decodeReports(cur)
+}
+
+// CountAndListReports implements same signature of the DB interface.
+func (db *MongoDB) CountAndListReports(skip, limit, minutes int, projection Projection) ([]Report, int, error) {
+	count, err := db.CountReports()
+	if err != nil {
+		return nil, -1, err
+	}
+	reports, err := db.ListReports(skip, limit, minutes, projection)
+	return reports, count, err
 }
 
 // GetReportByID implements same signature of the DB interface.
