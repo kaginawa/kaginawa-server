@@ -1,6 +1,9 @@
 package kaginawa
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestServer(t *testing.T) {
 	server := SSHServer{
@@ -138,5 +141,83 @@ func TestDB_Reports(t *testing.T) {
 	}
 	if count2 != 1 || len(reports2) != 1 {
 		t.Errorf("expected CountAndListReports()/len = %d/%d, got %d/%d", 1, 1, count2, len(reports2))
+	}
+}
+
+func TestMatchReports(t *testing.T) {
+	var db DB = NewMemDB()
+	if err := db.PutReport(Report{
+		ID:       "00:00:00:00:00:01",
+		CustomID: "test1",
+		Trigger:  3,
+		Success:  true,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	if err := db.PutReport(Report{
+		ID:       "00:00:00:00:00:02",
+		CustomID: "test2",
+		Trigger:  3,
+		Success:  true,
+	}); err != nil {
+		t.Fatal(err)
+	}
+	res, err := MatchReports(db, 0, ListViewAttributes, func(r Report) bool {
+		return r.CustomID == "test1"
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(res) != 1 {
+		t.Errorf("expected len(MatchReports()) = %d, got %d", 1, len(res))
+	}
+	if len(res) > 0 && res[0].ID != "00:00:00:00:00:01" {
+		t.Errorf("expected MatchReports()[0].ID = %s, got %s", "00:00:00:00:00:01", res[0].ID)
+	}
+}
+
+func TestSubReports(t *testing.T) {
+	tests := []struct {
+		reports  []Report
+		skip     int
+		limit    int
+		expected []Report
+	}{
+		{
+			reports:  []Report{{ID: "00:00:00:00:00:01"}, {ID: "00:00:00:00:00:02"}, {ID: "00:00:00:00:00:03"}},
+			skip:     1,
+			limit:    1,
+			expected: []Report{{ID: "00:00:00:00:00:02"}},
+		},
+		{
+			reports:  []Report{{ID: "00:00:00:00:00:01"}, {ID: "00:00:00:00:00:02"}, {ID: "00:00:00:00:00:03"}},
+			skip:     0,
+			limit:    0,
+			expected: []Report{{ID: "00:00:00:00:00:01"}, {ID: "00:00:00:00:00:02"}, {ID: "00:00:00:00:00:03"}},
+		},
+		{
+			reports:  []Report{{ID: "00:00:00:00:00:01"}, {ID: "00:00:00:00:00:02"}, {ID: "00:00:00:00:00:03"}},
+			skip:     0,
+			limit:    1,
+			expected: []Report{{ID: "00:00:00:00:00:01"}},
+		},
+		{
+			reports:  []Report{{ID: "00:00:00:00:00:01"}, {ID: "00:00:00:00:00:02"}, {ID: "00:00:00:00:00:03"}},
+			skip:     1,
+			limit:    0,
+			expected: []Report{{ID: "00:00:00:00:00:02"}, {ID: "00:00:00:00:00:03"}},
+		},
+		{
+			reports:  nil,
+			skip:     0,
+			limit:    0,
+			expected: nil,
+		},
+	}
+	for i, test := range tests {
+		actual := SubReports(test.reports, test.skip, test.limit)
+		if !reflect.DeepEqual(actual, test.expected) {
+			t.Errorf("#%d: expected %v, got %v", i, test.expected, actual)
+		}
 	}
 }

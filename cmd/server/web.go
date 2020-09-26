@@ -183,88 +183,44 @@ func handleFind(w http.ResponseWriter, r *http.Request) {
 		}
 		http.Redirect(w, r, "/nodes?custom-id="+findString, http.StatusSeeOther)
 	case "hostname":
-		reports, err := db.ListReports(0, 0, 0, kaginawa.ListViewAttributes)
+		matches, err := kaginawa.MatchReports(db, 0, kaginawa.ListViewAttributes, func(r kaginawa.Report) bool {
+			return r.Hostname == findString
+		})
 		if err != nil {
 			handleFindError(w, r, "Database unavailable")
 			return
 		}
-		var matches []kaginawa.Report
-		for _, report := range reports {
-			if report.Hostname == findString {
-				matches = append(matches, report)
-			}
-		}
-		switch len(matches) {
-		case 0:
-			handleFindError(w, r, "Not found: "+findString)
-		case 1:
-			http.Redirect(w, r, "/nodes/"+matches[0].ID, http.StatusSeeOther)
-		default:
-			http.Redirect(w, r, "/nodes?hostname="+findString, http.StatusSeeOther)
-		}
+		handleFindResult(w, r, findBy, findString, matches)
 	case "global-addr":
-		reports, err := db.ListReports(0, 0, 0, kaginawa.ListViewAttributes)
+		matches, err := kaginawa.MatchReports(db, 0, kaginawa.ListViewAttributes, func(r kaginawa.Report) bool {
+			return r.GlobalIP == findString || r.GlobalHost == findString
+		})
 		if err != nil {
 			handleFindError(w, r, "Database unavailable")
 			return
 		}
-		var matches []kaginawa.Report
-		for _, report := range reports {
-			if report.GlobalIP == findString || report.GlobalHost == findString {
-				matches = append(matches, report)
-			}
-		}
-		switch len(matches) {
-		case 0:
-			handleFindError(w, r, "Not found: "+findString)
-		case 1:
-			http.Redirect(w, r, "/nodes/"+matches[0].ID, http.StatusSeeOther)
-		default:
-			http.Redirect(w, r, "/nodes?global-addr="+findString, http.StatusSeeOther)
-		}
+		handleFindResult(w, r, findBy, findString, matches)
 	case "local-addr":
-		reports, err := db.ListReports(0, 0, 0, kaginawa.ListViewAttributes)
+		matches, err := kaginawa.MatchReports(db, 0, kaginawa.ListViewAttributes, func(r kaginawa.Report) bool {
+			return r.LocalIPv4 == findString || r.LocalIPv6 == findString
+		})
 		if err != nil {
 			handleFindError(w, r, "Database unavailable")
 			return
 		}
-		var matches []kaginawa.Report
-		for _, report := range reports {
-			if report.LocalIPv4 == findString || report.LocalIPv6 == findString {
-				matches = append(matches, report)
-			}
-		}
-		switch len(matches) {
-		case 0:
-			handleFindError(w, r, "Not found: "+findString)
-		case 1:
-			http.Redirect(w, r, "/nodes/"+matches[0].ID, http.StatusSeeOther)
-		default:
-			http.Redirect(w, r, "/nodes?local-addr="+findString, http.StatusSeeOther)
-		}
+		handleFindResult(w, r, findBy, findString, matches)
 	case "version":
 		if !strings.HasPrefix(findString, "v") {
 			findString = "v" + findString
 		}
-		reports, err := db.ListReports(0, 0, 0, kaginawa.ListViewAttributes)
+		matches, err := kaginawa.MatchReports(db, 0, kaginawa.ListViewAttributes, func(r kaginawa.Report) bool {
+			return r.AgentVersion == findString
+		})
 		if err != nil {
 			handleFindError(w, r, "Database unavailable")
 			return
 		}
-		var matches []kaginawa.Report
-		for _, report := range reports {
-			if report.AgentVersion == findString {
-				matches = append(matches, report)
-			}
-		}
-		switch len(matches) {
-		case 0:
-			handleFindError(w, r, "Not found: "+findString)
-		case 1:
-			http.Redirect(w, r, "/nodes/"+matches[0].ID, http.StatusSeeOther)
-		default:
-			http.Redirect(w, r, "/nodes?version="+findString, http.StatusSeeOther)
-		}
+		handleFindResult(w, r, findBy, findString, matches)
 	default:
 		handleFindError(w, r, "Unknown option: "+findBy)
 	}
@@ -282,6 +238,17 @@ func handleFindError(w http.ResponseWriter, r *http.Request, msg string) {
 		host,
 		msg,
 	})
+}
+
+func handleFindResult(w http.ResponseWriter, r *http.Request, findBy, findString string, matches []kaginawa.Report) {
+	switch len(matches) {
+	case 0:
+		handleFindError(w, r, "Not found: "+findString)
+	case 1:
+		http.Redirect(w, r, "/nodes/"+matches[0].ID, http.StatusSeeOther)
+	default:
+		http.Redirect(w, r, "/nodes?"+findBy+"="+findString, http.StatusSeeOther)
+	}
 }
 
 // handleNodes handles list of nodes requests.
@@ -343,54 +310,37 @@ func handleNodesWeb(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		count = len(matches)
-		var pageCount int
-		for _, report := range matches {
-			pageCount++
-			if pageCount <= offset {
-				continue
-			}
-			if limit > 0 && len(matches) >= limit {
-				break
-			}
-			reports = append(reports, report)
-		}
+		reports = kaginawa.SubReports(matches, offset, limit)
 		filtered = true
 	} else {
 		if !strings.HasPrefix(version, "v") {
 			version = "v" + version
 		}
-		allReports, err := db.ListReports(0, 0, minutes, kaginawa.ListViewAttributes)
+		matches, err := kaginawa.MatchReports(db, minutes, kaginawa.ListViewAttributes, func(r kaginawa.Report) bool {
+			if len(customID) > 0 && r.CustomID == customID {
+				return true
+			}
+			if len(hostname) > 0 && r.Hostname == hostname {
+				return true
+			}
+			if len(globalAddr) > 0 && (r.GlobalIP == globalAddr || r.GlobalHost == globalAddr) {
+				return true
+			}
+			if len(localAddr) > 0 && (r.LocalIPv4 == localAddr || r.LocalIPv6 == localAddr) {
+				return true
+			}
+			if len(version) > 0 && r.AgentVersion == version {
+				return true
+			}
+			return false
+		})
 		if err != nil {
 			log.Printf("failed to list reports: %v", err)
 			http.Error(w, "Database unavailable", http.StatusInternalServerError)
 			return
 		}
-		var matches []kaginawa.Report
-		for _, report := range allReports {
-			if len(customID) > 0 && report.CustomID == customID {
-				matches = append(matches, report)
-			} else if len(hostname) > 0 && report.Hostname == hostname {
-				matches = append(matches, report)
-			} else if len(globalAddr) > 0 && (report.GlobalIP == globalAddr || report.GlobalHost == globalAddr) {
-				matches = append(matches, report)
-			} else if len(localAddr) > 0 && (report.LocalIPv4 == localAddr || report.LocalIPv6 == localAddr) {
-				matches = append(matches, report)
-			} else if len(version) > 0 && report.AgentVersion == version {
-				matches = append(matches, report)
-			}
-		}
 		count = len(matches)
-		var pageCount int
-		for _, report := range matches {
-			pageCount++
-			if pageCount <= offset {
-				continue
-			}
-			if limit > 0 && len(matches) >= limit {
-				break
-			}
-			reports = append(reports, report)
-		}
+		reports = kaginawa.SubReports(matches, offset, limit)
 		filtered = true
 	}
 	execTemplate(w, "nodes", struct {
