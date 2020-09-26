@@ -82,8 +82,6 @@ func handleReport(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// TODO: implement reboot request feature
-
 	var msg reply
 	if len(kaginawa.SSHServers) > 0 {
 		i := rand.Int() % len(kaginawa.SSHServers)
@@ -105,8 +103,6 @@ func handleReport(w http.ResponseWriter, r *http.Request) {
 	if _, err := w.Write(rawReply); err != nil {
 		log.Printf("failed to write response: %v", err)
 	}
-
-	// TODO: reset reboot request
 }
 
 func reverseLookup(globalIP string) (string, error) {

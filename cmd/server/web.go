@@ -133,14 +133,7 @@ func handleNodesWeb(w http.ResponseWriter, r *http.Request) {
 	}
 	page := page(r)
 	limit := limit(r)
-	offset := (page - 1) * limit
-	count, err := db.CountReports()
-	if err != nil {
-		log.Printf("failed to count reports: %v", err)
-		http.Error(w, "Database unavailable", http.StatusInternalServerError)
-		return
-	}
-	reports, err := db.ListReports(offset, limit, 0, kaginawa.ListViewAttributes)
+	reports, count, err := db.CountAndListReports((page - 1) * limit, limit, 0, kaginawa.ListViewAttributes)
 	if err != nil {
 		log.Printf("failed to list reports: %v", err)
 		http.Error(w, "Database unavailable", http.StatusInternalServerError)

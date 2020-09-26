@@ -49,8 +49,10 @@ type DB interface {
 	PutReport(report Report) error
 	// CountReports counts number of reports.
 	CountReports() (int, error)
-	// ListReports scans all reports.
+	// ListReports scans list of reports.
 	ListReports(skip, limit, minutes int, projection Projection) ([]Report, error)
+	// CountAndListReports scans list of reports with total count.
+	CountAndListReports(skip, limit, minutes int, projection Projection) ([]Report, int, error)
 	// GetReportByID queries a report by id.
 	GetReportByID(id string) (*Report, error)
 	// ListReportsByCustomID queries list of reports by custom id.
@@ -111,6 +113,7 @@ type Report struct {
 	DiskDevice     string      `json:"disk_device,omitempty" bson:"disk_device"`           // Disk device name
 	USBDevices     []USBDevice `json:"usb_devices,omitempty" bson:"usb_devices"`           // List of usb devices
 	BDLocalDevices []string    `json:"bd_local_devices,omitempty" bson:"bd_local_devices"` // List of BT local devices
+	KernelVersion  string      `json:"kernel_version,omitempty" bson:"kernel_version"`     // Kernel version
 	Errors         []string    `json:"errors,omitempty" bson:"errors"`                     // List of errors
 	Payload        string      `json:"payload,omitempty" bson:"payload"`                   // Custom content
 	PayloadCmd     string      `json:"payload_cmd,omitempty" bson:"payload_cmd"`           // Executed payload command

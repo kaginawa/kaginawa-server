@@ -133,12 +133,31 @@ func (db *MemDB) ListReports(skip, limit, _ int, _ Projection) ([]Report, error)
 		if count <= skip {
 			continue
 		}
-		if len(slice) >= limit {
+		if limit > 0 && len(slice) >= limit {
 			break
 		}
 		slice = append(slice, v)
 	}
 	return slice, nil
+}
+
+// CountAndListReports implements same signature of the DB interface.
+func (db *MemDB) CountAndListReports(skip, limit, minutes int, projection Projection) ([]Report, int, error) {
+	db.nodesMutex.RLock()
+	defer db.nodesMutex.RUnlock()
+	var slice []Report
+	var count int
+	for _, v := range db.nodes {
+		count++
+		if count <= skip {
+			continue
+		}
+		if limit > 0 && len(slice) >= limit {
+			break
+		}
+		slice = append(slice, v)
+	}
+	return slice, len(db.nodes), nil
 }
 
 // GetReportByID implements same signature of the DB interface.

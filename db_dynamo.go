@@ -255,6 +255,7 @@ func (db *DynamoDB) CountReports() (int, error) {
 }
 
 // ListReports implements same signature of the DB interface.
+// Set limit <= 0 to enable unlimited scans.
 func (db *DynamoDB) ListReports(skip, limit, minutes int, projection Projection) ([]Report, error) {
 	builder := expression.NewBuilder()
 	if minutes > 0 {
@@ -282,7 +283,7 @@ func (db *DynamoDB) ListReports(skip, limit, minutes int, projection Projection)
 			if count <= skip {
 				continue
 			}
-			if len(records) >= limit {
+			if limit > 0 && len(records) >= limit {
 				return false
 			}
 			var record Report
@@ -297,6 +298,27 @@ func (db *DynamoDB) ListReports(skip, limit, minutes int, projection Projection)
 		return nil, err
 	}
 	return records, nil
+}
+
+// CountAndListReports implements same signature of the DB interface.
+func (db *DynamoDB) CountAndListReports(skip, limit, minutes int, projection Projection) ([]Report, int, error) {
+	all, err := db.ListReports(0, 0, minutes, projection)
+	if err != nil {
+		return nil, -1, err
+	}
+	var reports []Report
+	var pos int
+	for _, v := range all {
+		pos++
+		if pos <= skip {
+			continue
+		}
+		if limit > 0 && len(reports) >= limit {
+			break
+		}
+		reports = append(reports, v)
+	}
+	return reports, len(all), nil
 }
 
 // GetReportByID implements same signature of the DB interface.
