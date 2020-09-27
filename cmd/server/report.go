@@ -99,6 +99,9 @@ func handleReport(w http.ResponseWriter, r *http.Request) {
 }
 
 func reverseLookup(globalIP string) (string, error) {
+	if globalIP == "[::1]" {
+		return "", nil
+	}
 	names, err := net.LookupAddr(globalIP)
 	if err != nil {
 		return "", err
