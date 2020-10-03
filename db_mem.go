@@ -7,14 +7,16 @@ import (
 
 // MemDB implements in-memory store for testing.
 type MemDB struct {
-	keys         map[string]APIKey
-	servers      map[string]SSHServer
-	nodes        map[string]Report
-	logs         []Report
-	keysMutex    sync.RWMutex
-	serversMutex sync.RWMutex
-	nodesMutex   sync.RWMutex
-	logsMutex    sync.RWMutex
+	keys          map[string]APIKey
+	servers       map[string]SSHServer
+	nodes         map[string]Report
+	sessions      map[string]UserSession
+	logs          []Report
+	keysMutex     sync.RWMutex
+	serversMutex  sync.RWMutex
+	nodesMutex    sync.RWMutex
+	logsMutex     sync.RWMutex
+	sessionsMutex sync.RWMutex
 }
 
 // NewMemDB will creates in-memory DB instance that implements DB interface.
@@ -24,6 +26,7 @@ func NewMemDB() *MemDB {
 		servers: make(map[string]SSHServer),
 		nodes:   make(map[string]Report),
 		logs:    make([]Report, 0),
+		sessions: make(map[string]UserSession),
 	}
 }
 
@@ -196,4 +199,32 @@ func (db *MemDB) ListHistory(id string, begin time.Time, end time.Time, _ Projec
 		}
 	}
 	return slice, nil
+}
+
+// GetUserSession implements same signature of the DB interface.
+func (db *MemDB) GetUserSession(id string) (*UserSession, error) {
+	db.sessionsMutex.RLock()
+	defer db.sessionsMutex.RUnlock()
+	v, ok := db.sessions[id]
+	if !ok {
+		return nil, nil
+	}
+	return &v, nil
+}
+
+// PutUserSession implements same signature of the DB interface.
+func (db *MemDB) PutUserSession(session UserSession) error {
+	db.sessionsMutex.Lock()
+	defer db.sessionsMutex.Unlock()
+	db.sessions[session.ID] = session
+	return nil
+}
+
+
+// DeleteUserSession implements same signature of the DB interface.
+func (db *MemDB) DeleteUserSession(id string) error {
+	db.sessionsMutex.Lock()
+	defer db.sessionsMutex.Unlock()
+	delete(db.sessions, id)
+	return nil
 }

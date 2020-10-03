@@ -13,10 +13,11 @@ import (
 )
 
 const (
-	keyCollection    = "keys"
-	serverCollection = "servers"
-	nodeCollection   = "nodes"
-	logCollection    = "logs"
+	keyCollection     = "keys"
+	serverCollection  = "servers"
+	nodeCollection    = "nodes"
+	logCollection     = "logs"
+	sessionCollection = "sessions"
 )
 
 var (
@@ -270,6 +271,45 @@ func (db *MongoDB) ListHistory(id string, begin time.Time, end time.Time, projec
 	}
 	defer db.safeClose(cur)
 	return db.decodeReports(cur)
+}
+
+// GetUserSession implements same signature of the DB interface.
+func (db *MongoDB) GetUserSession(id string) (*UserSession, error) {
+	result := db.instance.Collection(sessionCollection).FindOne(context.Background(), bson.M{"sid": id})
+	if result.Err() != nil {
+		if result.Err() == mongo.ErrNoDocuments {
+			return nil, nil
+		}
+		return nil, result.Err()
+	}
+	var session UserSession
+	if err := result.Decode(&session); err != nil {
+		return nil, err
+	}
+	return &session, nil
+}
+
+// PutUserSession implements same signature of the DB interface.
+func (db *MongoDB) PutUserSession(session UserSession) error {
+	session.Time = time.Now().UTC()
+	raw, err := bson.Marshal(session)
+	if err != nil {
+		return fmt.Errorf("failed to marshal: %w", err)
+	}
+	key := bson.M{"sid": session.ID}
+	if _, err := db.instance.Collection(sessionCollection).ReplaceOne(context.Background(), key, raw, upsert); err != nil {
+		return err
+	}
+	return nil
+}
+
+// DeleteUserSession implements same signature of the DB interface.
+func (db *MongoDB) DeleteUserSession(id string) error {
+	key := bson.M{"sid": id}
+	if _, err := db.instance.Collection(sessionCollection).DeleteOne(context.Background(), key); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (db *MongoDB) applyProjection(opts *options.FindOptions, projection Projection) *options.FindOptions {
