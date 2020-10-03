@@ -5,15 +5,11 @@ import (
 	"encoding/base64"
 	"encoding/gob"
 	"errors"
-	"fmt"
 	"log"
 	"net/http"
-	"net/url"
-	"os"
 
 	"github.com/gorilla/sessions"
-	"github.com/quasoft/memstore"
-	"gopkg.in/boj/redistore.v1"
+	"github.com/kaginawa/kaginawa-server"
 )
 
 const sessionName = "kaginawa-session"
@@ -25,23 +21,12 @@ type Session struct {
 	instance *sessions.Session
 }
 
-func initSession() error {
+func initSession(ttlSec int) error {
 	gob.Register(map[string]interface{}{})
-	secretKey := []byte(oauthConfig.ClientSecret) // use client secret to cookie secret
-	if redisURL := os.Getenv("REDIS_URL"); len(redisURL) > 0 {
-		ep, err := url.Parse(redisURL)
-		if err != nil {
-			return fmt.Errorf("failed to parse redis url %s: %v", redisURL, err)
-		}
-		addr := fmt.Sprintf("%s:%s", ep.Hostname(), ep.Port())
-		pw, _ := ep.User.Password()
-		store, err := redistore.NewRediStore(5, "tcp", addr, pw, secretKey)
-		if err != nil {
-			return fmt.Errorf("failed to connect redis %s: %v", redisURL, err)
-		}
-		sessionStore = store
-	} else {
-		sessionStore = memstore.NewMemStore(secretKey)
+	var err error
+	sessionStore, err = kaginawa.NewSessionDB(db, ttlSec)
+	if err != nil {
+		return err
 	}
 	return nil
 }

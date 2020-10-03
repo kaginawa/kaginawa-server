@@ -19,15 +19,17 @@ const customIDPlaceholder = "-"
 
 // DynamoDB implements DB interface.
 type DynamoDB struct {
-	instance      *dynamodb.DynamoDB
-	encoder       *dynamodbattribute.Encoder
-	decoder       *dynamodbattribute.Decoder
-	keysTable     string
-	serversTable  string
-	nodesTable    string
-	logsTable     string
-	customIDIndex string
-	logsTTLDays   int
+	instance        *dynamodb.DynamoDB
+	encoder         *dynamodbattribute.Encoder
+	decoder         *dynamodbattribute.Decoder
+	keysTable       string
+	serversTable    string
+	nodesTable      string
+	logsTable       string
+	sessionsTable   string
+	customIDIndex   string
+	logsTTLDays     int
+	sessionsTTLDays int
 }
 
 // NewDynamoDB will creates AWS DynamoDB instance that implements DB interface.
@@ -51,6 +53,7 @@ func NewDynamoDB() (*DynamoDB, error) {
 	db.serversTable = os.Getenv("DYNAMO_SERVERS")
 	db.nodesTable = os.Getenv("DYNAMO_NODES")
 	db.logsTable = os.Getenv("DYNAMO_LOGS")
+	db.sessionsTable = os.Getenv("DYNAMO_SESSIONS")
 	db.customIDIndex = os.Getenv("DYNAMO_CUSTOM_IDS")
 	if len(db.keysTable) == 0 {
 		return nil, errors.New("missing env var: DYNAMO_KEYS")
@@ -64,16 +67,25 @@ func NewDynamoDB() (*DynamoDB, error) {
 	if len(db.logsTable) == 0 {
 		return nil, errors.New("missing env var: DYNAMO_LOGS")
 	}
+	if len(db.sessionsTable) == 0 {
+		return nil, errors.New("missing env var: DYNAMO_SESSIONS")
+	}
 	if len(db.customIDIndex) == 0 {
 		return nil, errors.New("missing env var: DYNAMO_CUSTOM_IDS")
 	}
-	ttlStr := os.Getenv("DYNAMO_TTL_DAYS")
-	if len(ttlStr) > 0 {
+	if ttlStr := os.Getenv("DYNAMO_LOGS_TTL_DAYS"); len(ttlStr) > 0 {
 		ttl, err := strconv.Atoi(ttlStr)
 		if err != nil || ttl < 0 {
-			return nil, fmt.Errorf("invalid env var: DYNAMO_TTL_DAYS = %s", ttlStr)
+			return nil, fmt.Errorf("invalid env var: DYNAMO_LOGS_TTL_DAYS = %s", ttlStr)
 		}
 		db.logsTTLDays = ttl
+	}
+	if ttlStr := os.Getenv("DYNAMO_SESSIONS_TTL_DAYS"); len(ttlStr) > 0 {
+		ttl, err := strconv.Atoi(ttlStr)
+		if err != nil || ttl < 0 {
+			return nil, fmt.Errorf("invalid env var: DYNAMO_SESSIONS_TTL_DAYS =%s", ttlStr)
+		}
+		db.sessionsTTLDays = ttl
 	}
 	return db, nil
 }
@@ -192,11 +204,11 @@ func (db *DynamoDB) ListSSHServers() ([]SSHServer, error) {
 
 // GetSSHServerByHost implements same signature of the DB interface.
 func (db *DynamoDB) GetSSHServerByHost(host string) (*SSHServer, error) {
-	hash, err := dynamodbattribute.MarshalMap(struct{ Host string }{host})
+	hash, err := db.encoder.Encode(struct{ Host string }{host})
 	if err != nil {
 		return nil, fmt.Errorf("invalid ID: %v", err)
 	}
-	item, err := db.instance.GetItem(&dynamodb.GetItemInput{TableName: aws.String(db.serversTable), Key: hash})
+	item, err := db.instance.GetItem(&dynamodb.GetItemInput{TableName: aws.String(db.serversTable), Key: hash.M})
 	if err != nil {
 		return nil, err
 	}
@@ -323,11 +335,11 @@ func (db *DynamoDB) CountAndListReports(skip, limit, minutes int, projection Pro
 
 // GetReportByID implements same signature of the DB interface.
 func (db *DynamoDB) GetReportByID(id string) (*Report, error) {
-	hash, err := dynamodbattribute.MarshalMap(struct{ ID string }{id})
+	hash, err := db.encoder.Encode(struct{ ID string }{id})
 	if err != nil {
 		return nil, fmt.Errorf("invalid ID: %v", err)
 	}
-	item, err := db.instance.GetItem(&dynamodb.GetItemInput{TableName: aws.String(db.nodesTable), Key: hash})
+	item, err := db.instance.GetItem(&dynamodb.GetItemInput{TableName: aws.String(db.nodesTable), Key: hash.M})
 	if err != nil {
 		return nil, err
 	}
@@ -386,6 +398,55 @@ func (db *DynamoDB) ListHistory(id string, begin time.Time, end time.Time, proje
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
 	})
+}
+
+// GetUserSession implements same signature of the DB interface.
+func (db *DynamoDB) GetUserSession(id string) (*UserSession, error) {
+	key, err := db.encoder.Encode(struct{ ID string }{id})
+	if err != nil {
+		return nil, fmt.Errorf("invalid id: %w", err)
+	}
+	item, err := db.instance.GetItem(&dynamodb.GetItemInput{TableName: &db.sessionsTable, Key: key.M})
+	if err != nil {
+		return nil, err
+	}
+	if len(item.Item) == 0 {
+		return nil, nil
+	}
+	var us UserSession
+	if err := db.decoder.Decode(&dynamodb.AttributeValue{M: item.Item}, &us); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal record: %w", err)
+	}
+	return &us, nil
+}
+
+// PutUserSession implements same signature of the DB interface.
+func (db *DynamoDB) PutUserSession(session UserSession) error {
+	item, err := db.encoder.Encode(session)
+	if err != nil {
+		return fmt.Errorf("failed to marshal session: %w", err)
+	}
+	if _, err = db.instance.PutItem(&dynamodb.PutItemInput{TableName: &db.sessionsTable, Item: item.M}); err != nil {
+		return fmt.Errorf("failed to put session: %w", err)
+	}
+	return nil
+}
+
+// DeleteUserSession implements same signature of the DB interface.
+func (db *DynamoDB) DeleteUserSession(id string) error {
+	key, err := db.encoder.Encode(struct{ ID string }{id})
+	if err != nil {
+		return fmt.Errorf("invalid id: %w", err)
+	}
+	if _, err = db.instance.DeleteItem(&dynamodb.DeleteItemInput{TableName: &db.sessionsTable, Key: key.M}); err != nil {
+		return fmt.Errorf("failed to delete session: %w", err)
+	}
+	return nil
+}
+
+// SessionTTLSeconds calculates session TTL seconds.
+func (db *DynamoDB) SessionTTLSeconds() int {
+	return db.sessionsTTLDays * 24 * 60 * 60
 }
 
 func (db *DynamoDB) applyProjection(builder expression.Builder, projection Projection) expression.Builder {

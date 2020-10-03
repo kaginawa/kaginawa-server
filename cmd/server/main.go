@@ -23,14 +23,10 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Initialize session
-	if err := initSession(); err != nil {
-		log.Fatal(err)
-	}
-
 	// Initialize database
 	mongoURI := os.Getenv("MONGODB_URI")
 	dynamoKeys := os.Getenv("DYNAMO_KEYS")
+	sessionTTL := 0
 	if len(mongoURI) > 0 {
 		mongoDB, err := kaginawa.NewMongoDB(mongoURI)
 		if err != nil {
@@ -43,8 +39,14 @@ func main() {
 			log.Fatalf("failed to initialize database: %v", err)
 		}
 		db = dynamoDB
+		sessionTTL = dynamoDB.SessionTTLSeconds()
 	} else {
 		log.Fatal("Database not configured!")
+	}
+
+	// Initialize session
+	if err := initSession(sessionTTL); err != nil {
+		log.Fatal(err)
 	}
 
 	// Load api keys

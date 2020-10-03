@@ -43,10 +43,18 @@ Kaginawa Server automatically creates following collections when first touch:
 
 - `keys` - All API keys
 - `servers` - All SSH servers
-- `nodes` - Newest received reports for each nodes
-- `logs` - All received reports
+- `nodes` - Newest received reports for each node
+- `logs` - All received reports (*1)
+- `sessions` - Web UI sessions (*2)
 
-We recommend creating `logs` collection as a [capped collection](https://docs.mongodb.com/manual/core/capped-collections/).
+*1) We recommend creating `logs` collection as a [capped collection](https://docs.mongodb.com/manual/core/capped-collections/).
+
+*2) Session expiration is configurable with [TTL indexes](https://docs.mongodb.com/manual/core/index-ttl/) feature.
+Example mongo shell (set to 6 months):
+
+```
+db.sessions.createIndex( { "time": 1 }, { expireAfterSeconds: 15552000 } )
+```
 
 ### Using DynamoDB
 
@@ -55,12 +63,14 @@ See the comment of [AWS SDK for Go API Reference](https://docs.aws.amazon.com/sd
 
 Environment variables:
 
-- `DYNAMO_KEYS` - Name of table of keys (e.g. `KaginawaKeys`)
-- `DYNAMO_SERVERS` - Name of table of servers (e.g. `KaginawaServers`)
-- `DYNAMO_NODES` - Name of table of nodes (e.g. `KaginawaNodes`)
-- `DYNAMO_LOGS` - Name of table of logs (e.g. `KaginawaLogs`)
-- `DYNAMO_CUSTOM_IDS` - Name of index of custom id (e.g. `CustomID-index`)
-- `DYNAMO_TTL_DAYS` - (Optional) TTL for the table of logs 
+- `DYNAMO_KEYS` - Table of keys (e.g. `KaginawaKeys`)
+- `DYNAMO_SERVERS` - Table of servers (e.g. `KaginawaServers`)
+- `DYNAMO_NODES` - Table of nodes (e.g. `KaginawaNodes`)
+- `DYNAMO_LOGS` - Table of logs (e.g. `KaginawaLogs`)
+- `DYNAMO_SESSIONS` = Table of sessions (e.g. `KaginawaSessions`)
+- `DYNAMO_CUSTOM_IDS` - Index of custom id (e.g. `CustomID-index`)
+- `DYNAMO_LOGS_TTL_DAYS` - (Optional) TTL for the table of logs 
+- `DYNAMO_SESSIONS_TTL_DAYS` - (Optional) TTL for the table of sessions
 - `DYNAMO_ENDPOINT` - (Optional) Custom endpoint (i.e. using DynamoDB Local)
 
 Create a table of keys using aws-cli:
@@ -103,6 +113,24 @@ aws dynamodb create-table \
         AttributeName=ServerTime,AttributeType=N \
     --key-schema AttributeName=ID,KeyType=HASH AttributeName=ServerTime,KeyType=RANGE \
     --provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1
+aws dynamodb update-time-to-live \
+    --table-name KaginawaLogs \
+    --time-to-live-specification \
+        Enabled=true,AttributeName=TTL
+```
+
+Create a table of sessions using aws-cli:
+
+```
+aws dynamodb create-table \
+    --table-name KaginawaSessions \
+    --attribute-definitions AttributeName=ID,AttributeType=S \
+    --key-schema AttributeName=ID,KeyType=HASH \
+    --provisioned-throughput ReadCapacityUnits=1,WriteCapacityUnits=1
+aws dynamodb update-time-to-live \
+    --table-name KaginawaSessions \
+    --time-to-live-specification \
+        Enabled=true,AttributeName=TTL
 ```
 
 Create an index of custom ID for a table of nodes using aws-cli:

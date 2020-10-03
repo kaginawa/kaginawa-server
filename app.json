@@ -5,16 +5,16 @@
   "logo": "https://github.com/kaginawa.png",
   "addons": [
     {
-      "plan": "scheduler:standard"
-    },
-    {
       "plan": "auth0:free"
     },
     {
       "plan": "heroku-redis:hobby-dev"
-    },
-    {
-      "plan": "mongolab:sandbox"
     }
-  ]
+  ],
+  "env": {
+    "MONGODB_URI": {
+      "description": "MongoDB connection string",
+      "value": "mongodb+srv://user:password@cluster/db"
+    }
+  }
 }
