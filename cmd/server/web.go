@@ -718,6 +718,33 @@ func handleHistories(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// handleNodeDelete handles delete request from web form.
+//
+// - Method: POST
+// - Client: Browser
+// - Access: Admin
+// - Response: 303 redirect
+func handleNodeDelete(w http.ResponseWriter, r *http.Request) {
+	id := mux.Vars(r)["id"]
+	if len(id) == 0 {
+		http.NotFound(w, r)
+		return
+	}
+	if r.Method != http.MethodPost {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+	if !getSession(r).isLoggedIn() {
+		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+		return
+	}
+	if err := db.DeleteReport(id); err != nil {
+		log.Printf("failed to delete report %s: %v", id, err)
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+	}
+	http.Redirect(w, r, "/nodes", http.StatusSeeOther)
+}
+
 func loadTemplates(dir string) []string {
 	dirEntries, err := ioutil.ReadDir(dir)
 	if err != nil {

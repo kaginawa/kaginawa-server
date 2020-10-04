@@ -261,6 +261,12 @@ func (db *MongoDB) ListReportsByCustomID(customID string, minutes int, projectio
 	return db.decodeReports(cur)
 }
 
+// DeleteReport implements same signature of the DB interface.
+func (db *MongoDB) DeleteReport(id string) error {
+	_, err := db.instance.Collection(nodeCollection).DeleteOne(context.Background(), bson.M{"id": id})
+	return err
+}
+
 // ListHistory implements same signature of the DB interface.
 func (db *MongoDB) ListHistory(id string, begin time.Time, end time.Time, projection Projection) ([]Report, error) {
 	opts := db.applyProjection(&options.FindOptions{Sort: bson.M{"server_time": 1}}, projection)
@@ -297,19 +303,14 @@ func (db *MongoDB) PutUserSession(session UserSession) error {
 		return fmt.Errorf("failed to marshal: %w", err)
 	}
 	key := bson.M{"sid": session.ID}
-	if _, err := db.instance.Collection(sessionCollection).ReplaceOne(context.Background(), key, raw, upsert); err != nil {
-		return err
-	}
-	return nil
+	_, err = db.instance.Collection(sessionCollection).ReplaceOne(context.Background(), key, raw, upsert)
+	return err
 }
 
 // DeleteUserSession implements same signature of the DB interface.
 func (db *MongoDB) DeleteUserSession(id string) error {
-	key := bson.M{"sid": id}
-	if _, err := db.instance.Collection(sessionCollection).DeleteOne(context.Background(), key); err != nil {
-		return err
-	}
-	return nil
+	_, err := db.instance.Collection(sessionCollection).DeleteOne(context.Background(), bson.M{"sid": id})
+	return err
 }
 
 func (db *MongoDB) applyProjection(opts *options.FindOptions, projection Projection) *options.FindOptions {

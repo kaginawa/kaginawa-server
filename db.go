@@ -57,6 +57,8 @@ type DB interface {
 	GetReportByID(id string) (*Report, error)
 	// ListReportsByCustomID queries list of reports by custom id.
 	ListReportsByCustomID(customID string, minutes int, projection Projection) ([]Report, error)
+	// DeleteReport deletes a report. Histories are preserved.
+	DeleteReport(id string) error
 	// ListHistory queries list of history.
 	ListHistory(id string, begin time.Time, end time.Time, projection Projection) ([]Report, error)
 	// GetUserSession gets a user session.

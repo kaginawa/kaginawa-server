@@ -22,10 +22,10 @@ type MemDB struct {
 // NewMemDB will creates in-memory DB instance that implements DB interface.
 func NewMemDB() *MemDB {
 	return &MemDB{
-		keys:    make(map[string]APIKey),
-		servers: make(map[string]SSHServer),
-		nodes:   make(map[string]Report),
-		logs:    make([]Report, 0),
+		keys:     make(map[string]APIKey),
+		servers:  make(map[string]SSHServer),
+		nodes:    make(map[string]Report),
+		logs:     make([]Report, 0),
 		sessions: make(map[string]UserSession),
 	}
 }
@@ -187,6 +187,14 @@ func (db *MemDB) ListReportsByCustomID(customID string, _ int, _ Projection) ([]
 	return slice, nil
 }
 
+// DeleteReport implements same signature of the DB interface.
+func (db *MemDB) DeleteReport(id string) error {
+	db.nodesMutex.Lock()
+	defer db.nodesMutex.Unlock()
+	delete(db.nodes, id)
+	return nil
+}
+
 // ListHistory implements same signature of the DB interface.
 func (db *MemDB) ListHistory(id string, begin time.Time, end time.Time, _ Projection) ([]Report, error) {
 	db.nodesMutex.RLock()
@@ -219,7 +227,6 @@ func (db *MemDB) PutUserSession(session UserSession) error {
 	db.sessions[session.ID] = session
 	return nil
 }
-
 
 // DeleteUserSession implements same signature of the DB interface.
 func (db *MemDB) DeleteUserSession(id string) error {
