@@ -180,7 +180,7 @@ func (db *DynamoDB) ListSSHServers() ([]SSHServer, error) {
 func (db *DynamoDB) GetSSHServerByHost(host string) (*SSHServer, error) {
 	hash, err := db.encoder.Encode(struct{ Host string }{host})
 	if err != nil {
-		return nil, fmt.Errorf("invalid ID: %v", err)
+		return nil, fmt.Errorf("invalid host: %v", err)
 	}
 	item, err := db.instance.GetItem(&dynamodb.GetItemInput{TableName: &db.serversTable, Key: hash.M})
 	if err != nil {
@@ -308,7 +308,7 @@ func (db *DynamoDB) CountAndListReports(skip, limit, minutes int, projection Pro
 func (db *DynamoDB) GetReportByID(id string) (*Report, error) {
 	hash, err := db.encoder.Encode(struct{ ID string }{id})
 	if err != nil {
-		return nil, fmt.Errorf("invalid ID: %v", err)
+		return nil, fmt.Errorf("invalid report ID: %v", err)
 	}
 	item, err := db.instance.GetItem(&dynamodb.GetItemInput{TableName: &db.nodesTable, Key: hash.M})
 	if err != nil {
@@ -353,7 +353,7 @@ func (db *DynamoDB) ListReportsByCustomID(customID string, minutes int, projecti
 func (db *DynamoDB) DeleteReport(id string) error {
 	hash, err := db.encoder.Encode(struct{ ID string }{id})
 	if err != nil {
-		return fmt.Errorf("invalid ID: %v", err)
+		return fmt.Errorf("invalid report ID: %v", err)
 	}
 	_, err = db.instance.DeleteItem(&dynamodb.DeleteItemInput{TableName: &db.nodesTable, Key: hash.M})
 	return err
@@ -382,7 +382,7 @@ func (db *DynamoDB) ListHistory(id string, begin time.Time, end time.Time, proje
 func (db *DynamoDB) GetUserSession(id string) (*UserSession, error) {
 	hash, err := db.encoder.Encode(struct{ ID string }{id})
 	if err != nil {
-		return nil, fmt.Errorf("invalid id: %w", err)
+		return nil, fmt.Errorf("invalid session ID: %w", err)
 	}
 	item, err := db.instance.GetItem(&dynamodb.GetItemInput{TableName: &db.sessionsTable, Key: hash.M})
 	if err != nil {
@@ -412,7 +412,7 @@ func (db *DynamoDB) PutUserSession(session UserSession) error {
 func (db *DynamoDB) DeleteUserSession(id string) error {
 	hash, err := db.encoder.Encode(struct{ ID string }{id})
 	if err != nil {
-		return fmt.Errorf("invalid id: %w", err)
+		return fmt.Errorf("invalid session ID: %w", err)
 	}
 	_, err = db.instance.DeleteItem(&dynamodb.DeleteItemInput{TableName: &db.sessionsTable, Key: hash.M})
 	return err
