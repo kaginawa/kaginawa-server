@@ -45,6 +45,8 @@ func NewMongoDB(endpoint string) (*MongoDB, error) {
 
 // ValidateAPIKey implements same signature of the DB interface.
 func (db *MongoDB) ValidateAPIKey(key string) (bool, string, error) {
+	key = sanitize(key)
+
 	// Check cache first
 	if v, ok := KnownAPIKeys.Load(key); ok {
 		return ok, v.(string), nil
@@ -70,6 +72,8 @@ func (db *MongoDB) ValidateAPIKey(key string) (bool, string, error) {
 
 // ValidateAdminAPIKey implements same signature of the DB interface.
 func (db *MongoDB) ValidateAdminAPIKey(key string) (bool, string, error) {
+	key = sanitize(key)
+
 	// Check cache first
 	if v, ok := KnownAdminAPIKeys.Load(key); ok {
 		return ok, v.(string), nil
@@ -121,7 +125,7 @@ func (db *MongoDB) PutAPIKey(apiKey APIKey) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal: %w", err)
 	}
-	key := bson.M{"key": apiKey.Key}
+	key := bson.M{"key": sanitize(apiKey.Key)}
 	if _, err := db.instance.Collection(keyCollection).ReplaceOne(context.Background(), key, raw, upsert); err != nil {
 		return err
 	}
@@ -149,7 +153,7 @@ func (db *MongoDB) ListSSHServers() ([]SSHServer, error) {
 
 // GetSSHServerByHost implements same signature of the DB interface.
 func (db *MongoDB) GetSSHServerByHost(host string) (*SSHServer, error) {
-	result := db.instance.Collection(serverCollection).FindOne(context.Background(), bson.M{"host": host})
+	result := db.instance.Collection(serverCollection).FindOne(context.Background(), bson.M{"host": sanitize(host)})
 	if result.Err() != nil {
 		if result.Err() == mongo.ErrNoDocuments {
 			return nil, nil
@@ -169,7 +173,7 @@ func (db *MongoDB) PutSSHServer(server SSHServer) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal: %w", err)
 	}
-	key := bson.M{"host": server.Host, "port": server.Port}
+	key := bson.M{"host": sanitize(server.Host), "port": server.Port}
 	if _, err := db.instance.Collection(serverCollection).ReplaceOne(context.Background(), key, raw, upsert); err != nil {
 		return err
 	}
@@ -182,7 +186,7 @@ func (db *MongoDB) PutReport(report Report) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal: %w", err)
 	}
-	key := bson.M{"id": report.ID}
+	key := bson.M{"id": sanitize(report.ID)}
 	if _, err = db.instance.Collection(nodeCollection).ReplaceOne(context.Background(), key, raw, upsert); err != nil {
 		return err
 	}
@@ -230,7 +234,7 @@ func (db *MongoDB) CountAndListReports(skip, limit, minutes int, projection Proj
 
 // GetReportByID implements same signature of the DB interface.
 func (db *MongoDB) GetReportByID(id string) (*Report, error) {
-	result := db.instance.Collection(nodeCollection).FindOne(context.Background(), bson.M{"id": id})
+	result := db.instance.Collection(nodeCollection).FindOne(context.Background(), bson.M{"id": sanitize(id)})
 	if result.Err() != nil {
 		if result.Err() == mongo.ErrNoDocuments {
 			return nil, nil
@@ -247,7 +251,7 @@ func (db *MongoDB) GetReportByID(id string) (*Report, error) {
 // ListReportsByCustomID implements same signature of the DB interface.
 func (db *MongoDB) ListReportsByCustomID(customID string, minutes int, projection Projection) ([]Report, error) {
 	opts := &options.FindOptions{Sort: bson.M{"hostname": 1}}
-	filter := bson.M{"custom_id": customID}
+	filter := bson.M{"custom_id": sanitize(customID)}
 	if minutes > 0 {
 		timestamp := time.Now().UTC().Add(-time.Duration(minutes) * time.Minute)
 		filter["server_time"] = bson.M{"$gte": timestamp.Unix()}
@@ -264,7 +268,7 @@ func (db *MongoDB) ListReportsByCustomID(customID string, minutes int, projectio
 // ListHistory implements same signature of the DB interface.
 func (db *MongoDB) ListHistory(id string, begin time.Time, end time.Time, projection Projection) ([]Report, error) {
 	opts := db.applyProjection(&options.FindOptions{Sort: bson.M{"server_time": 1}}, projection)
-	filter := bson.M{"id": id, "server_time": bson.M{"$gte": begin.Unix(), "$lte": end.Unix()}}
+	filter := bson.M{"id": sanitize(id), "server_time": bson.M{"$gte": begin.Unix(), "$lte": end.Unix()}}
 	cur, err := db.instance.Collection(logCollection).Find(context.Background(), filter, opts)
 	if err != nil {
 		return nil, err
@@ -275,7 +279,7 @@ func (db *MongoDB) ListHistory(id string, begin time.Time, end time.Time, projec
 
 // GetUserSession implements same signature of the DB interface.
 func (db *MongoDB) GetUserSession(id string) (*UserSession, error) {
-	result := db.instance.Collection(sessionCollection).FindOne(context.Background(), bson.M{"sid": id})
+	result := db.instance.Collection(sessionCollection).FindOne(context.Background(), bson.M{"sid": sanitize(id)})
 	if result.Err() != nil {
 		if result.Err() == mongo.ErrNoDocuments {
 			return nil, nil
@@ -370,6 +374,10 @@ func (db *MongoDB) decodeReports(cur *mongo.Cursor) ([]Report, error) {
 		reports = append(reports, result)
 	}
 	return reports, nil
+}
+
+func sanitize(in string) string {
+	return strings.Trim(in, " $/^\\")
 }
 
 func int64p(n int) *int64 {
