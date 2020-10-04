@@ -92,55 +92,29 @@ func NewDynamoDB() (*DynamoDB, error) {
 
 // ValidateAPIKey implements same signature of the DB interface.
 func (db *DynamoDB) ValidateAPIKey(key string) (bool, string, error) {
-	// Check cache first
 	if v, ok := KnownAPIKeys.Load(key); ok {
 		return ok, v.(string), nil
 	}
-
-	// Retrieve from database
-	hash, err := db.encoder.Encode(struct{ Key string }{key})
+	apiKey, err := db.findAPIKey(key)
 	if err != nil {
-		return false, "", fmt.Errorf("invalid key: %v", err)
-	}
-	item, err := db.instance.GetItem(&dynamodb.GetItemInput{TableName: &db.keysTable, Key: hash.M})
-	if err != nil || item == nil {
 		return false, "", err
 	}
-	var apiKey APIKey
-	if err := db.decoder.Decode(&dynamodb.AttributeValue{M: item.Item}, &apiKey); err != nil {
-		return false, "", err
-	}
-
-	// Cache and return
 	KnownAPIKeys.Store(apiKey.Key, apiKey.Label)
 	return true, apiKey.Label, nil
 }
 
 // ValidateAdminAPIKey implements same signature of the DB interface.
 func (db *DynamoDB) ValidateAdminAPIKey(key string) (bool, string, error) {
-	// Check cache first
 	if v, ok := KnownAdminAPIKeys.Load(key); ok {
 		return ok, v.(string), nil
 	}
-
-	// Retrieve from database
-	hash, err := db.encoder.Encode(struct{ Key string }{key})
+	apiKey, err := db.findAPIKey(key)
 	if err != nil {
-		return false, "", fmt.Errorf("invalid key: %v", err)
-	}
-	item, err := db.instance.GetItem(&dynamodb.GetItemInput{TableName: &db.keysTable, Key: hash.M})
-	if err != nil || item == nil {
-		return false, "", err
-	}
-	var apiKey APIKey
-	if err := db.decoder.Decode(&dynamodb.AttributeValue{M: item.Item}, &apiKey); err != nil {
 		return false, "", err
 	}
 	if !apiKey.Admin {
 		return false, "", nil
 	}
-
-	// Cache and return
 	KnownAdminAPIKeys.Store(apiKey.Key, apiKey.Label)
 	return true, apiKey.Label, nil
 }
@@ -273,11 +247,8 @@ func (db *DynamoDB) ListReports(skip, limit, minutes int, projection Projection)
 	if minutes > 0 {
 		timestamp := time.Now().UTC().Add(-time.Duration(minutes) * time.Minute)
 		builder = builder.WithFilter(expression.Name("ServerTime").GreaterThanEqual(expression.Value(timestamp.Unix())))
-	} else {
-		builder = builder.WithFilter(expression.Name("ServerTime").GreaterThan(expression.Value(1)))
 	}
-	builder = db.applyProjection(builder, projection)
-	expr, err := builder.Build()
+	expr, err := db.applyProjection(builder, projection).Build()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build expression: %w", err)
 	}
@@ -362,11 +333,8 @@ func (db *DynamoDB) ListReportsByCustomID(customID string, minutes int, projecti
 	if minutes > 0 {
 		timestamp := time.Now().UTC().Add(-time.Duration(minutes) * time.Minute)
 		builder = builder.WithFilter(expression.Name("ServerTime").GreaterThanEqual(expression.Value(timestamp.Unix())))
-	} else {
-		builder = builder.WithFilter(expression.Name("ServerTime").GreaterThan(expression.Value(1)))
 	}
-	builder = db.applyProjection(builder, projection)
-	expr, err := builder.Build()
+	expr, err := db.applyProjection(builder, projection).Build()
 	if err != nil {
 		return nil, fmt.Errorf("failed to build expression: %w", err)
 	}
@@ -495,6 +463,22 @@ func (db *DynamoDB) applyProjection(builder expression.Builder, projection Proje
 		))
 	}
 	return builder
+}
+
+func (db *DynamoDB) findAPIKey(key string) (APIKey, error) {
+	hash, err := db.encoder.Encode(struct{ Key string }{key})
+	if err != nil {
+		return APIKey{}, fmt.Errorf("invalid key: %v", err)
+	}
+	item, err := db.instance.GetItem(&dynamodb.GetItemInput{TableName: &db.keysTable, Key: hash.M})
+	if err != nil || item == nil {
+		return APIKey{}, err
+	}
+	var apiKey APIKey
+	if err := db.decoder.Decode(&dynamodb.AttributeValue{M: item.Item}, &apiKey); err != nil {
+		return APIKey{}, err
+	}
+	return apiKey, nil
 }
 
 func (db *DynamoDB) queryReports(query *dynamodb.QueryInput) ([]Report, error) {
