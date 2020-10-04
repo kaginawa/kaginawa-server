@@ -40,7 +40,7 @@ Environment variables:
 
 - `MONGODB_URI`: MongoDB endpoint (`mongodb://user:pass@host:port/db`)
 
-Note that MongoDB Atlas may fail to connect with long database name, so exclude all parameters from the connection string (e.g. `mongodb+srv://user:password@cluster/db`).
+Note that MongoDB Atlas may fail to connect with long database name, so exclude all parameters from the connection string (e.g. `mongodb+srv://user:pass@cluster/db`).
 
 Kaginawa Server automatically creates following collections when first touch:
 
