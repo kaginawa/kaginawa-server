@@ -102,13 +102,13 @@ func (db *DynamoDB) ValidateAPIKey(key string) (bool, string, error) {
 	if err != nil {
 		return false, "", fmt.Errorf("invalid key: %v", err)
 	}
-	item, err := db.instance.GetItem(&dynamodb.GetItemInput{TableName: aws.String(db.keysTable), Key: hash.M})
+	item, err := db.instance.GetItem(&dynamodb.GetItemInput{TableName: &db.keysTable, Key: hash.M})
 	if err != nil || item == nil {
 		return false, "", err
 	}
 	var apiKey APIKey
 	if err := db.decoder.Decode(&dynamodb.AttributeValue{M: item.Item}, &apiKey); err != nil {
-		return false, "", fmt.Errorf("failed to unmarshal record: %w", err)
+		return false, "", err
 	}
 
 	// Cache and return
@@ -128,13 +128,13 @@ func (db *DynamoDB) ValidateAdminAPIKey(key string) (bool, string, error) {
 	if err != nil {
 		return false, "", fmt.Errorf("invalid key: %v", err)
 	}
-	item, err := db.instance.GetItem(&dynamodb.GetItemInput{TableName: aws.String(db.keysTable), Key: hash.M})
+	item, err := db.instance.GetItem(&dynamodb.GetItemInput{TableName: &db.keysTable, Key: hash.M})
 	if err != nil || item == nil {
 		return false, "", err
 	}
 	var apiKey APIKey
 	if err := db.decoder.Decode(&dynamodb.AttributeValue{M: item.Item}, &apiKey); err != nil {
-		return false, "", fmt.Errorf("failed to unmarshal record: %w", err)
+		return false, "", err
 	}
 	if !apiKey.Admin {
 		return false, "", nil
@@ -149,7 +149,7 @@ func (db *DynamoDB) ValidateAdminAPIKey(key string) (bool, string, error) {
 func (db *DynamoDB) ListAPIKeys() ([]APIKey, error) {
 	var records []APIKey
 	if err := db.instance.ScanPages(&dynamodb.ScanInput{
-		TableName: aws.String(db.keysTable),
+		TableName: &db.keysTable,
 	}, func(output *dynamodb.ScanOutput, lastPage bool) bool {
 		for _, item := range output.Items {
 			var record APIKey
@@ -176,7 +176,7 @@ func (db *DynamoDB) PutAPIKey(apiKey APIKey) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal: %w", err)
 	}
-	_, err = db.instance.PutItem(&dynamodb.PutItemInput{TableName: aws.String(db.keysTable), Item: item.M})
+	_, err = db.instance.PutItem(&dynamodb.PutItemInput{TableName: &db.keysTable, Item: item.M})
 	return err
 }
 
@@ -184,7 +184,7 @@ func (db *DynamoDB) PutAPIKey(apiKey APIKey) error {
 func (db *DynamoDB) ListSSHServers() ([]SSHServer, error) {
 	var records []SSHServer
 	if err := db.instance.ScanPages(&dynamodb.ScanInput{
-		TableName: aws.String(db.serversTable),
+		TableName: &db.serversTable,
 	}, func(output *dynamodb.ScanOutput, lastPage bool) bool {
 		for _, item := range output.Items {
 			var record SSHServer
@@ -208,7 +208,7 @@ func (db *DynamoDB) GetSSHServerByHost(host string) (*SSHServer, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid ID: %v", err)
 	}
-	item, err := db.instance.GetItem(&dynamodb.GetItemInput{TableName: aws.String(db.serversTable), Key: hash.M})
+	item, err := db.instance.GetItem(&dynamodb.GetItemInput{TableName: &db.serversTable, Key: hash.M})
 	if err != nil {
 		return nil, err
 	}
@@ -217,7 +217,7 @@ func (db *DynamoDB) GetSSHServerByHost(host string) (*SSHServer, error) {
 	}
 	var server SSHServer
 	if err := db.decoder.Decode(&dynamodb.AttributeValue{M: item.Item}, &server); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal record: %w", err)
+		return nil, err
 	}
 	return &server, nil
 }
@@ -228,7 +228,7 @@ func (db *DynamoDB) PutSSHServer(server SSHServer) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal: %w", err)
 	}
-	_, err = db.instance.PutItem(&dynamodb.PutItemInput{TableName: aws.String(db.serversTable), Item: item.M})
+	_, err = db.instance.PutItem(&dynamodb.PutItemInput{TableName: &db.serversTable, Item: item.M})
 	return err
 }
 
@@ -257,7 +257,7 @@ func (db *DynamoDB) PutReport(report Report) error {
 func (db *DynamoDB) CountReports() (int, error) {
 	var count int
 	err := db.instance.ScanPages(&dynamodb.ScanInput{
-		TableName: aws.String(db.nodesTable),
+		TableName: &db.nodesTable,
 		Select:    aws.String(dynamodb.SelectCount),
 	}, func(output *dynamodb.ScanOutput, lastPage bool) bool {
 		count += int(*output.Count)
@@ -284,7 +284,7 @@ func (db *DynamoDB) ListReports(skip, limit, minutes int, projection Projection)
 	var records []Report
 	var count int
 	if err := db.instance.ScanPages(&dynamodb.ScanInput{
-		TableName:                 aws.String(db.nodesTable),
+		TableName:                 &db.nodesTable,
 		FilterExpression:          expr.Filter(),
 		ProjectionExpression:      expr.Projection(),
 		ExpressionAttributeNames:  expr.Names(),
@@ -339,7 +339,7 @@ func (db *DynamoDB) GetReportByID(id string) (*Report, error) {
 	if err != nil {
 		return nil, fmt.Errorf("invalid ID: %v", err)
 	}
-	item, err := db.instance.GetItem(&dynamodb.GetItemInput{TableName: aws.String(db.nodesTable), Key: hash.M})
+	item, err := db.instance.GetItem(&dynamodb.GetItemInput{TableName: &db.nodesTable, Key: hash.M})
 	if err != nil {
 		return nil, err
 	}
@@ -348,7 +348,7 @@ func (db *DynamoDB) GetReportByID(id string) (*Report, error) {
 	}
 	var report Report
 	if err := db.decoder.Decode(&dynamodb.AttributeValue{M: item.Item}, &report); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal record: %w", err)
+		return nil, err
 	}
 	return &report, nil
 }
@@ -371,14 +371,24 @@ func (db *DynamoDB) ListReportsByCustomID(customID string, minutes int, projecti
 		return nil, fmt.Errorf("failed to build expression: %w", err)
 	}
 	return db.queryReports(&dynamodb.QueryInput{
-		TableName:                 aws.String(db.nodesTable),
-		IndexName:                 aws.String(db.customIDIndex),
+		TableName:                 &db.nodesTable,
+		IndexName:                 &db.customIDIndex,
 		KeyConditionExpression:    expr.KeyCondition(),
 		FilterExpression:          expr.Filter(),
 		ProjectionExpression:      expr.Projection(),
 		ExpressionAttributeNames:  expr.Names(),
 		ExpressionAttributeValues: expr.Values(),
 	})
+}
+
+// DeleteReport implements same signature of the DB interface.
+func (db *DynamoDB) DeleteReport(id string) error {
+	hash, err := db.encoder.Encode(struct{ ID string }{id})
+	if err != nil {
+		return fmt.Errorf("invalid ID: %v", err)
+	}
+	_, err = db.instance.DeleteItem(&dynamodb.DeleteItemInput{TableName: &db.nodesTable, Key: hash.M})
+	return err
 }
 
 // ListHistory implements same signature of the DB interface.
@@ -391,7 +401,7 @@ func (db *DynamoDB) ListHistory(id string, begin time.Time, end time.Time, proje
 		return nil, fmt.Errorf("failed to build expression: %w", err)
 	}
 	return db.queryReports(&dynamodb.QueryInput{
-		TableName:                 aws.String(db.logsTable),
+		TableName:                 &db.logsTable,
 		KeyConditionExpression:    expr.KeyCondition(),
 		FilterExpression:          expr.Filter(),
 		ProjectionExpression:      expr.Projection(),
@@ -402,11 +412,11 @@ func (db *DynamoDB) ListHistory(id string, begin time.Time, end time.Time, proje
 
 // GetUserSession implements same signature of the DB interface.
 func (db *DynamoDB) GetUserSession(id string) (*UserSession, error) {
-	key, err := db.encoder.Encode(struct{ ID string }{id})
+	hash, err := db.encoder.Encode(struct{ ID string }{id})
 	if err != nil {
 		return nil, fmt.Errorf("invalid id: %w", err)
 	}
-	item, err := db.instance.GetItem(&dynamodb.GetItemInput{TableName: &db.sessionsTable, Key: key.M})
+	item, err := db.instance.GetItem(&dynamodb.GetItemInput{TableName: &db.sessionsTable, Key: hash.M})
 	if err != nil {
 		return nil, err
 	}
@@ -415,7 +425,7 @@ func (db *DynamoDB) GetUserSession(id string) (*UserSession, error) {
 	}
 	var us UserSession
 	if err := db.decoder.Decode(&dynamodb.AttributeValue{M: item.Item}, &us); err != nil {
-		return nil, fmt.Errorf("failed to unmarshal record: %w", err)
+		return nil, err
 	}
 	return &us, nil
 }
@@ -426,22 +436,18 @@ func (db *DynamoDB) PutUserSession(session UserSession) error {
 	if err != nil {
 		return fmt.Errorf("failed to marshal session: %w", err)
 	}
-	if _, err = db.instance.PutItem(&dynamodb.PutItemInput{TableName: &db.sessionsTable, Item: item.M}); err != nil {
-		return fmt.Errorf("failed to put session: %w", err)
-	}
-	return nil
+	_, err = db.instance.PutItem(&dynamodb.PutItemInput{TableName: &db.sessionsTable, Item: item.M})
+	return err
 }
 
 // DeleteUserSession implements same signature of the DB interface.
 func (db *DynamoDB) DeleteUserSession(id string) error {
-	key, err := db.encoder.Encode(struct{ ID string }{id})
+	hash, err := db.encoder.Encode(struct{ ID string }{id})
 	if err != nil {
 		return fmt.Errorf("invalid id: %w", err)
 	}
-	if _, err = db.instance.DeleteItem(&dynamodb.DeleteItemInput{TableName: &db.sessionsTable, Key: key.M}); err != nil {
-		return fmt.Errorf("failed to delete session: %w", err)
-	}
-	return nil
+	_, err = db.instance.DeleteItem(&dynamodb.DeleteItemInput{TableName: &db.sessionsTable, Key: hash.M})
+	return err
 }
 
 // SessionTTLSeconds calculates session TTL seconds.

@@ -294,6 +294,13 @@
         </div>
     </form>
     <pre class="bg-gray-100">{{.Response}}</pre>
+    <h3 class="text-2xl">Danger Zone</h3>
+    <p>If you no longer need to manage this node, you can delete it. Logs are preserved.</p>
+    <form method="post" action="/nodes/{{.Report.ID}}/delete" class="my-2">
+        <button class="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded shadow">
+            Delete
+        </button>
+    </form>
 </div>
 <script>
     const nodeId = "{{.Report.ID}}";

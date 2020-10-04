@@ -71,6 +71,16 @@ func TestDB_Reports(t *testing.T) {
 	if count2 != 1 || len(reports2) != 1 {
 		t.Errorf("expected CountAndListReports()/len = %d/%d, got %d/%d", 1, 1, count2, len(reports2))
 	}
+	if err := db.DeleteReport("f0:18:98:eb:c7:27"); err != nil {
+		t.Fatal(err)
+	}
+	count3, err := db.CountReports()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if count3 != 0 {
+		t.Errorf("expected CountRepots() = %d, got %d", 0, count3)
+	}
 }
 
 func TestDB_UserSessions(t *testing.T) {
