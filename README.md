@@ -16,7 +16,7 @@ Docker image is available at [Docker Hub](https://hub.docker.com/r/kaginawa/kagi
 
 ## Requirements
 
-### General
+### OAuth 2.0 Provider
 
 Administration users must be authorized by OAuth 2.0 provider.
 We tested [Auth0](https://auth0.com/) as a provider.
@@ -28,16 +28,19 @@ Required environment variables for OAuth 2.0 authorization:
 - `OAUTH_CLIENT_SECRET` or `AUTH0_CLIENT_SECRET` - OAuth 2.0 provider client secret
 - `SELF_URL` - Self URL using OAuth 2.0 callback process (e.g. `http://localhost:8080`)
 
-By default, user sessions are store into RAM.
-You can specify Redis URL to replace it. This is recommended for production use.
+If you use the [Deploy to Heroku] button, they will be set automatically by the add-on.
 
-- `REDIS_URL` - Redis URL (format: `redis://user:password@hostname:port`)
+### Database
 
-### Using MongoDB
+You can choose MongoDB or DynamoDB as a database.
+
+#### Using MongoDB
 
 Environment variables:
 
 - `MONGODB_URI`: MongoDB endpoint (`mongodb://user:pass@host:port/db`)
+
+Note that MongoDB Atlas may fail to connect with long database name, so exclude all parameters from the connection string (e.g. `mongodb+srv://user:password@cluster/db`).
 
 Kaginawa Server automatically creates following collections when first touch:
 
@@ -48,15 +51,20 @@ Kaginawa Server automatically creates following collections when first touch:
 - `sessions` - Web UI sessions (*2)
 
 *1) We recommend creating `logs` collection as a [capped collection](https://docs.mongodb.com/manual/core/capped-collections/).
+Example mongo shell (set to 256 MB):
+
+```
+db.runCommand({"convertToCapped": "logs", size: 268435456})
+```
 
 *2) Session expiration is configurable with [TTL indexes](https://docs.mongodb.com/manual/core/index-ttl/) feature.
 Example mongo shell (set to 6 months):
 
 ```
-db.sessions.createIndex( { "time": 1 }, { expireAfterSeconds: 15552000 } )
+db.sessions.createIndex({"time": 1}, {expireAfterSeconds: 15552000})
 ```
 
-### Using DynamoDB
+#### Using DynamoDB
 
 Kaginawa server uses AWS default credentials.
 See the comment of [AWS SDK for Go API Reference](https://docs.aws.amazon.com/sdk-for-go/api/aws/session/#NewSession) for more details.

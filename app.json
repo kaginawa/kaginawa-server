@@ -6,9 +6,6 @@
   "addons": [
     {
       "plan": "auth0:free"
-    },
-    {
-      "plan": "heroku-redis:hobby-dev"
     }
   ],
   "env": {
