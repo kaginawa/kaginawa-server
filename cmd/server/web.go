@@ -177,11 +177,7 @@ func handleFind(w http.ResponseWriter, r *http.Request) {
 			handleFindError(w, r, "Database unavailable")
 			return
 		}
-		if len(reports) == 0 {
-			handleFindError(w, r, "Not found: "+findString)
-			return
-		}
-		http.Redirect(w, r, "/nodes?custom-id="+findString, http.StatusSeeOther)
+		handleFindResult(w, r, findBy, findString, reports)
 	case "hostname":
 		matches, err := kaginawa.MatchReports(db, 0, kaginawa.ListViewAttributes, func(r kaginawa.Report) bool {
 			return r.Hostname == findString
