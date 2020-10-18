@@ -1,6 +1,7 @@
 package main
 
 import (
+	"compress/gzip"
 	"encoding/json"
 	"io/ioutil"
 	"log"
@@ -15,7 +16,6 @@ import (
 
 // reply defines all of reply message attributes
 type reply struct {
-	Reboot        bool   `json:"reboot,omitempty"` // Reboot requested from the server
 	SSHServerHost string `json:"ssh_host,omitempty"`
 	SSHServerPort int    `json:"ssh_port,omitempty"`
 	SSHServerUser string `json:"ssh_user,omitempty"`
@@ -38,13 +38,23 @@ func handleReport(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
 		return
 	}
-	body, err := ioutil.ReadAll(r.Body)
+	reader := r.Body
+	defer safeClose(reader, "Report body")
+	if r.Header.Get("Content-Encoding") == "gzip" {
+		r, err := gzip.NewReader(r.Body)
+		if err != nil {
+			log.Printf("failed to read gzipped request body: %v", err)
+			http.Error(w, "Response read error", http.StatusInternalServerError)
+			return
+		}
+		reader = r
+	}
+	body, err := ioutil.ReadAll(reader)
 	if err != nil {
-		log.Printf("failed to read request: %v", err)
+		log.Printf("failed to read request body: %v", err)
 		http.Error(w, "Response read error", http.StatusInternalServerError)
 		return
 	}
-	defer safeClose(r.Body, "Report body")
 	var report kaginawa.Report
 	if err := json.Unmarshal(body, &report); err != nil {
 		http.Error(w, "Response unmarshal error", http.StatusBadRequest)
@@ -79,7 +89,6 @@ func handleReport(w http.ResponseWriter, r *http.Request) {
 	if len(kaginawa.SSHServers) > 0 {
 		i := rand.Int() % len(kaginawa.SSHServers)
 		msg = reply{
-			Reboot:        false,
 			SSHServerHost: kaginawa.SSHServers[i].Host,
 			SSHServerPort: kaginawa.SSHServers[i].Port,
 			SSHServerUser: kaginawa.SSHServers[i].User,
@@ -87,14 +96,24 @@ func handleReport(w http.ResponseWriter, r *http.Request) {
 			SSHPassword:   kaginawa.SSHServers[i].Password,
 		}
 	}
-	rawReply, err := json.MarshalIndent(msg, "", "  ")
+	rawReply, err := json.Marshal(msg)
 	if err != nil {
 		http.Error(w, "Response marshal error", http.StatusInternalServerError)
 		return
 	}
-	w.WriteHeader(http.StatusCreated)
-	if _, err := w.Write(rawReply); err != nil {
-		log.Printf("failed to write response: %v", err)
+	if strings.Contains(r.Header.Get("Accept-Encoding"), "gzip") {
+		w.Header().Set("Content-Encoding", "gzip")
+		w.WriteHeader(http.StatusCreated)
+		gz := gzip.NewWriter(w)
+		defer safeClose(gz, "gzipped response")
+		if _, err := gz.Write(rawReply); err != nil {
+			log.Printf("failed to write response: %v", err)
+		}
+	} else {
+		w.WriteHeader(http.StatusCreated)
+		if _, err := w.Write(rawReply); err != nil {
+			log.Printf("failed to write response: %v", err)
+		}
 	}
 }
 
