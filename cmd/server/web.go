@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"html"
 	"html/template"
 	"io/ioutil"
 	"log"
@@ -284,7 +285,7 @@ func handleNodesWeb(w http.ResponseWriter, r *http.Request) {
 	if len(minutesStr) > 0 {
 		minutes, err = strconv.Atoi(minutesStr)
 		if err != nil {
-			http.Error(w, "Invalid parameter: minutes = "+minutesStr, http.StatusBadRequest)
+			http.Error(w, "Invalid parameter: minutes = "+html.EscapeString(minutesStr), http.StatusBadRequest)
 			return
 		}
 	}
@@ -596,7 +597,7 @@ func handleNewSSHServer(w http.ResponseWriter, r *http.Request) {
 	}
 	port, err := strconv.Atoi(p)
 	if err != nil {
-		http.Error(w, fmt.Sprintf("%s is not a port number", p), http.StatusBadRequest)
+		http.Error(w, fmt.Sprintf("%s is not a port number", html.EscapeString(p)), http.StatusBadRequest)
 		return
 	}
 	if len(u) == 0 {
