@@ -328,6 +328,14 @@
                     }
                 },
                 {
+                    id: "seq",
+                    position: "right",
+                    display: false,
+                    ticks: {
+                        beginAtZero: true
+                    }
+                },
+                {
                     id: "no-data",
                     position: "right",
                     display: false,
@@ -492,6 +500,18 @@
                             pointHoverRadius: 2,
                             borderWidth: 1,
                             yAxisID: "throughput",
+                        },
+                        {
+                            label: "SEQ",
+                            data: histories.map(h => h["seq"]),
+                            backgroundColor: "rgba(120, 120, 120, 0.2)",
+                            borderColor: "rgba(120, 120, 120, 1)",
+                            fill: false,
+                            pointRadius: 0,
+                            pointHoverRadius: 2,
+                            borderWidth: 1,
+                            steppedLine: "middle",
+                            yAxisID: "seq",
                         },
                         {
                             label: "No Data",
