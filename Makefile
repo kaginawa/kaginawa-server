@@ -2,21 +2,21 @@
 
 .PHONY: setup
 setup: ## Resolve dependencies using Go Modules
-	GO111MODULE=on go mod download
+	go mod download
 
 .PHONY: test
 test: ## Tests all code
-	GO111MODULE=on go test -cover -race ./...
+	go test -cover -race ./...
 
 .PHONY: lint
 lint: ## Runs static code analysis
-	command -v golint >/dev/null 2>&1 || { GO111MODULE=on go get -u golang.org/x/lint/golint; }
+	command -v golint >/dev/null 2>&1 || { GO111MODULE=off go get -u golang.org/x/lint/golint; }
 	golint -set_exit_status ./...
 	npm run lint
 
 .PHONY: run
 run: ## Run web application locally
-	GO111MODULE=on go run `find cmd/server -type f -not -name "*_test.go" | tr '\r\n' ' '`
+	go run `find cmd/server -type f -not -name "*_test.go" | tr '\r\n' ' '`
 
 .PHONY: docker-build
 docker-build: ## Build a docker image
@@ -35,7 +35,7 @@ count-go: ## Count number of lines of all go codes
 
 .PHONY: count-html
 count-html: ## Count number of lines of all go html templates
-	find . -name "*.html" -type f | xargs wc -l | tail -n 1
+	find . -name "*.gohtml" -type f | xargs wc -l | tail -n 1
 
 .PHONY: help
 help:
