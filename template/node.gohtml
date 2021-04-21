@@ -209,7 +209,8 @@
                 </td>
             </tr>
         {{end}}
-        {{if .Report.KernelVersion}} // available since kaginawa v1.0.0
+        {{if .Report.KernelVersion}}
+            <!-- available since kaginawa v1.0.0 -->
             <tr>
                 <th class="border px-1 py-1" scope="row">Kernel Version</th>
                 <td class="border px-1 py-1">{{.Report.KernelVersion}}</td>

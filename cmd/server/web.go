@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	templateExt     = ".html"
+	templateExt     = ".gohtml"
 	contentTypeJSON = "application/json"
 )
 
@@ -770,7 +770,7 @@ func parseTemplate(n, dir string) *template.Template {
 		dir + "/_header" + templateExt,
 		dir + "/_footer" + templateExt,
 	}
-	t, err := template.New(n + ".html").Funcs(funcMap).ParseFiles(list...)
+	t, err := template.New(n + templateExt).Funcs(funcMap).ParseFiles(list...)
 	if err != nil {
 		panic(err)
 	}

@@ -27,7 +27,7 @@
   ],
   "settings": {
     "html/html-extensions": [
-      ".html"
+      ".gohtml"
     ],
     "html/report-bad-indent": "error"
   }
