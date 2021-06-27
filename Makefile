@@ -10,7 +10,7 @@ test: ## Tests all code
 
 .PHONY: lint
 lint: ## Runs static code analysis
-	command -v golint >/dev/null 2>&1 || { GO111MODULE=off go get -u golang.org/x/lint/golint; }
+	command -v golint >/dev/null 2>&1 || { go install golang.org/x/lint/golint@latest }
 	golint -set_exit_status ./...
 	npm run lint
 
