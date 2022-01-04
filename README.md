@@ -26,6 +26,8 @@ Required environment variables for OAuth 2.0 authorization:
 - `OAUTH_DOMAIN` or `AUTH0_DOMAIN` - OAuth 2.0 provider domain name (e.g. `xxx.auth0.com`)
 - `OAUTH_CLIENT_ID` or `AUTH0_CLIENT_ID` - OAuth 2.0 provider client ID
 - `OAUTH_CLIENT_SECRET` or `AUTH0_CLIENT_SECRET` - OAuth 2.0 provider client secret
+- `OAUTH_AUTH_URL` - OAuth 2.0 authorization URL (default: Auth0's URL)
+- `OAUTH_TOKEN_URL` - OAuth 2.0 token URL (default: Auth0's URL)
 - `SELF_URL` - Self URL using OAuth 2.0 callback process (e.g. `http://localhost:8080`)
 
 If you use the [Deploy to Heroku] button, they will be set automatically by the add-on.
