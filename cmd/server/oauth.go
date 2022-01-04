@@ -7,12 +7,13 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"os"
 
 	"golang.org/x/oauth2"
+	"golang.org/x/oauth2/endpoints"
 )
 
 var (
-	oauthURL    string
 	userInfoURL string
 	logoutURL   string
 	selfURL     string
@@ -20,10 +21,6 @@ var (
 )
 
 func initOAuth() error {
-	domain := getEnvs("OAUTH_DOMAIN", "AUTH0_DOMAIN")
-	if len(domain) == 0 {
-		return errors.New("please set $OAUTH_DOMAIN")
-	}
 	clientID := getEnvs("OAUTH_CLIENT_ID", "AUTH0_CLIENT_ID")
 	if len(clientID) == 0 {
 		return errors.New("please set $OAUTH_CLIENT_ID")
@@ -36,28 +33,65 @@ func initOAuth() error {
 	if len(selfURL) == 0 {
 		return errors.New("please set $SELF_URL")
 	}
-	oauthURL = "https://" + domain
-	userInfoURL = oauthURL + "/userinfo"
-	logoutURL = oauthURL + "/v2/logout"
-	authURL := oauthURL + "/authorize"
-	if authURLOverride := getEnvs("OAUTH_AUTH_URL"); len(authURLOverride) > 0 {
-		authURL = authURLOverride
+	switch os.Getenv("OAUTH_TYPE") {
+	default:
+		fallthrough
+	case "auth0":
+		domain := getEnvs("OAUTH_DOMAIN", "AUTH0_DOMAIN")
+		if len(domain) == 0 {
+			return errors.New("please set $OAUTH_DOMAIN")
+		}
+		userInfoURL = "https://" + domain + "/userinfo"
+		logoutURL = "https://" + domain + "/v2/logout"
+		oauthConfig = &oauth2.Config{
+			ClientID:     clientID,
+			ClientSecret: clientSecret,
+			RedirectURL:  selfURL + "/callback",
+			Scopes:       []string{"openid", "profile", "email"},
+			Endpoint: oauth2.Endpoint{
+				AuthURL:  "https://" + domain + "/authorize",
+				TokenURL: "https://" + domain + "/oauth/token",
+			},
+		}
+		return nil
+	case "google":
+		userInfoURL = "https://www.googleapis.com/oauth2/v1/userinfo"
+		oauthConfig = &oauth2.Config{
+			ClientID:     clientID,
+			ClientSecret: clientSecret,
+			RedirectURL:  selfURL + "/callback",
+			Scopes:       []string{"openid", "profile", "email"},
+			Endpoint: oauth2.Endpoint{
+				AuthURL:  endpoints.Google.AuthURL,
+				TokenURL: endpoints.Google.TokenURL,
+			},
+		}
+		return nil
+	case "custom":
+		userInfoURL = os.Getenv("OAUTH_USERINFO_URL")
+		if len(userInfoURL) == 0 {
+			return errors.New("please set $OAUTH_USERINFO_URL")
+		}
+		authURL := os.Getenv("OAUTH_AUTH_URL")
+		if len(authURL) == 0 {
+			return errors.New("please set $OAUTH_AUTH_URL")
+		}
+		tokenURL := os.Getenv("OAUTH_TOKEN_URL")
+		if len(tokenURL) == 0 {
+			return errors.New("please set $OAUTH_TOKEN_URL")
+		}
+		oauthConfig = &oauth2.Config{
+			ClientID:     clientID,
+			ClientSecret: clientSecret,
+			RedirectURL:  selfURL + "/callback",
+			Scopes:       []string{"openid", "profile", "email"},
+			Endpoint: oauth2.Endpoint{
+				AuthURL:  authURL,
+				TokenURL: tokenURL,
+			},
+		}
+		return nil
 	}
-	tokenURL := oauthURL + "/oauth/token"
-	if tokenURLOverride := getEnvs("OAUTH_TOKEN_URL"); len(tokenURLOverride) > 0 {
-		tokenURL = tokenURLOverride
-	}
-	oauthConfig = &oauth2.Config{
-		ClientID:     clientID,
-		ClientSecret: clientSecret,
-		RedirectURL:  selfURL + "/callback",
-		Scopes:       []string{"openid", "profile", "email"},
-		Endpoint: oauth2.Endpoint{
-			AuthURL:  authURL,
-			TokenURL: tokenURL,
-		},
-	}
-	return nil
 }
 
 func handleOAuthLogin(w http.ResponseWriter, r *http.Request) {
@@ -71,7 +105,18 @@ func handleOAuthLogin(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "failed to start authentication: "+err.Error(), http.StatusUnauthorized)
 		return
 	}
-	audience := oauth2.SetAuthURLParam("audience", userInfoURL)
+
+	var audience oauth2.AuthCodeOption
+	switch os.Getenv("OAUTH_TYPE") {
+	default:
+		fallthrough
+	case "auth0":
+		audience = oauth2.SetAuthURLParam("audience", userInfoURL)
+	case "google":
+		audience = oauth2.SetAuthURLParam("audience", oauthConfig.ClientID)
+	case "custom":
+		audience = oauth2.SetAuthURLParam("audience", os.Getenv("OAUTH_AUDIENCE"))
+	}
 	http.Redirect(w, r, oauthConfig.AuthCodeURL(state, audience), http.StatusTemporaryRedirect)
 }
 
@@ -79,6 +124,10 @@ func handleOAuthLogout(w http.ResponseWriter, r *http.Request) {
 	session := getSession(r)
 	if err := session.logout(w, r); err != nil {
 		http.Error(w, "failed to clear session: "+err.Error(), http.StatusUnauthorized)
+		return
+	}
+	if len(logoutURL) == 0 {
+		http.Redirect(w, r, selfURL, http.StatusTemporaryRedirect)
 		return
 	}
 	parsed, err := url.Parse(logoutURL)
@@ -128,6 +177,7 @@ func handleOAuthLoginCallback(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
 	}
+	log.Printf("logged in: %v", profile)
 	http.Redirect(w, r, "/", http.StatusSeeOther)
 }
 
