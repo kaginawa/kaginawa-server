@@ -39,14 +39,22 @@ func initOAuth() error {
 	oauthURL = "https://" + domain
 	userInfoURL = oauthURL + "/userinfo"
 	logoutURL = oauthURL + "/v2/logout"
+	authURL := oauthURL + "/authorize"
+	if authURLOverride := getEnvs("OAUTH_AUTH_URL"); len(authURLOverride) > 0 {
+		authURL = authURLOverride
+	}
+	tokenURL := oauthURL + "/oauth/token"
+	if tokenURLOverride := getEnvs("OAUTH_TOKEN_URL"); len(tokenURLOverride) > 0 {
+		tokenURL = tokenURLOverride
+	}
 	oauthConfig = &oauth2.Config{
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
 		RedirectURL:  selfURL + "/callback",
 		Scopes:       []string{"openid", "profile", "email"},
 		Endpoint: oauth2.Endpoint{
-			AuthURL:  oauthURL + "/authorize",
-			TokenURL: oauthURL + "/oauth/token",
+			AuthURL:  authURL,
+			TokenURL: tokenURL,
 		},
 	}
 	return nil
