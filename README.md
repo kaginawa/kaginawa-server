@@ -19,18 +19,43 @@ Docker image is available at [Docker Hub](https://hub.docker.com/r/kaginawa/kagi
 ### OAuth 2.0 Provider
 
 Administration users must be authorized by OAuth 2.0 provider.
-We tested [Auth0](https://auth0.com/) as a provider.
 
-Required environment variables for OAuth 2.0 authorization:
+You can choose Auth0, Google and more as an identity provider.
 
-- `OAUTH_DOMAIN` or `AUTH0_DOMAIN` - OAuth 2.0 provider domain name (e.g. `xxx.auth0.com`)
-- `OAUTH_CLIENT_ID` or `AUTH0_CLIENT_ID` - OAuth 2.0 provider client ID
-- `OAUTH_CLIENT_SECRET` or `AUTH0_CLIENT_SECRET` - OAuth 2.0 provider client secret
-- `OAUTH_AUTH_URL` - OAuth 2.0 authorization URL (default: Auth0's URL)
-- `OAUTH_TOKEN_URL` - OAuth 2.0 token URL (default: Auth0's URL)
+#### Using Auth0
+
+Required environment variables:
+
+- `AUTH0_DOMAIN` - OAuth 2.0 provider domain name (e.g. `xxx.auth0.com`)
+- `AUTH0_CLIENT_ID` - OAuth 2.0 provider client ID
+- `AUTH0_CLIENT_SECRET` - OAuth 2.0 provider client secret
 - `SELF_URL` - Self URL using OAuth 2.0 callback process (e.g. `http://localhost:8080`)
 
-If you use the [Deploy to Heroku] button, they will be set automatically by the add-on.
+If you use the [Deploy to Heroku] button, they will be set automatically by the add-on except `SELF_URL`.
+
+#### Using Google OAuth 2.0 API
+
+Required environment variables:
+
+- `OAUTH_TYPE` - Set to `google`
+- `OAUTH_CLIENT_ID` - OAuth 2.0 provider client ID
+- `OAUTH_CLIENT_SECRET` - OAuth 2.0 provider client secret
+- `SELF_URL` - Self URL using OAuth 2.0 callback process (e.g. `http://localhost:8080`)
+
+See [developer.google.com](https://developers.google.com/identity/protocols/oauth2/openid-connect) for more information.
+
+#### Using other identity providers
+
+Required environment variables:
+
+- `OAUTH_TYPE` - Set to `custom`
+- `OAUTH_CLIENT_ID` - OAuth 2.0 provider client ID
+- `OAUTH_CLIENT_SECRET` - OAuth 2.0 provider client secret
+- `SELF_URL` - Self URL using OAuth 2.0 callback process (e.g. `http://localhost:8080`)
+- `OAUTH_AUTH_URL` - OAuth 2.0 authorization URL
+- `OAUTH_TOKEN_URL` - OAuth 2.0 token URL
+- `OAUTH_AUDIENCE` - OAuth 2.0 audience string
+- `OAUTH_USERINFO_URL` - OpenID Connect user info URL
 
 ### Database
 
@@ -38,7 +63,7 @@ You can choose MongoDB or DynamoDB as a database.
 
 #### Using MongoDB
 
-Environment variables:
+Required environment variable:
 
 - `MONGODB_URI`: MongoDB endpoint (`mongodb://user:pass@host:port/db`)
 
@@ -71,7 +96,7 @@ db.sessions.createIndex({"time": 1}, {expireAfterSeconds: 15552000})
 Kaginawa server uses AWS default credentials.
 See the comment of [AWS SDK for Go API Reference](https://docs.aws.amazon.com/sdk-for-go/api/aws/session/#NewSession) for more details.
 
-Environment variables:
+Required environment variables:
 
 - `DYNAMO_KEYS` - Table of keys (e.g. `KaginawaKeys`)
 - `DYNAMO_SERVERS` - Table of servers (e.g. `KaginawaServers`)
