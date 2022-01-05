@@ -33,7 +33,7 @@ var (
 		"t_fresh": func(ts int64, min int) bool {
 			return time.Unix(ts, 0).After(time.Now().Add(-time.Duration(min) * time.Minute))
 		},
-		// human readable byte size
+		// human-readable byte size
 		"b_fmt": func(bytes interface{}) string {
 			var b uint64
 			switch bytes.(type) {
@@ -114,7 +114,7 @@ func handleIndex(w http.ResponseWriter, r *http.Request) {
 	ip := remoteIP(r)
 	host, err := reverseLookup(ip)
 	if err != nil {
-		log.Printf("failed to execute reverse lookup for %s: %v", ip, err)
+		host = ip
 	}
 	execTemplate(w, "index", indexParams{
 		newMeta(r, "Welcome"),
@@ -227,7 +227,7 @@ func handleFindError(w http.ResponseWriter, r *http.Request, msg string) {
 	ip := remoteIP(r)
 	host, err := reverseLookup(ip)
 	if err != nil {
-		log.Printf("failed to execute reverse lookup for %s: %v", ip, err)
+		host = ip
 	}
 	execTemplate(w, "index", indexParams{
 		newMeta(r, "Welcome"),

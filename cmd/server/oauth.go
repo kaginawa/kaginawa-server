@@ -21,6 +21,15 @@ var (
 )
 
 func initOAuth() error {
+	getEnvs := func(keys ...string) string {
+		for _, key := range keys {
+			value := os.Getenv(key)
+			if len(value) > 0 {
+				return value
+			}
+		}
+		return ""
+	}
 	clientID := getEnvs("OAUTH_CLIENT_ID", "AUTH0_CLIENT_ID")
 	if len(clientID) == 0 {
 		return errors.New("please set $OAUTH_CLIENT_ID")
@@ -147,6 +156,7 @@ func handleOAuthLoginCallback(w http.ResponseWriter, r *http.Request) {
 	state := r.URL.Query().Get("state")
 	session := getSession(r)
 	if state != session.state() {
+		log.Printf("invalid state parameter: state expected: %s got: %s profile: %v", session.state(), state, session.profile())
 		http.Error(w, "invalid state parameter", http.StatusUnauthorized)
 		return
 	}
