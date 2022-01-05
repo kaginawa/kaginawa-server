@@ -171,7 +171,18 @@
     const genElement = document.getElementById("keygen");
 
     genElement.addEventListener("click", function () {
-        keyElement.value = Math.random().toString(36).substring(7) + Math.random().toString(36).substring(7);
+        const request = new XMLHttpRequest();
+        request.open("POST", "/gen-key");
+        request.addEventListener("load", (event) => {
+            if (event.target["status"] !== 200) {
+                console.error(`[gen-key] ${event.target["status"]}: ${event.target["statusText"]}`);
+                keyElement.value = "ERROR: HTTP " + event.target["status"];
+                return;
+            }
+            keyElement.value = event.target["responseText"];
+        });
+        request.send();
+
     });
 </script>
 {{template "footer" .Meta}}

@@ -15,11 +15,13 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/kaginawa/kaginawa-server"
+	"github.com/segmentio/ksuid"
 )
 
 const (
 	templateExt     = ".gohtml"
 	contentTypeJSON = "application/json"
+	contentTypeText = "text/plain"
 )
 
 var (
@@ -566,7 +568,33 @@ func handleNewAPIKey(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/admin", http.StatusSeeOther)
 }
 
-// handleNewAPIKey handles SSH server registration requests.
+// handleGenerateKey handles API key generation requests.
+//
+// - Method: POST
+// - Client: Browser
+// - Access: Admin
+// - Response: Plain text
+func handleGenerateKey(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+	if !getSession(r).isLoggedIn() {
+		http.Error(w, http.StatusText(http.StatusForbidden), http.StatusForbidden)
+		return
+	}
+	id, err := ksuid.NewRandom()
+	if err != nil {
+		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Add("Content-Type", contentTypeText)
+	if _, err := w.Write([]byte(id.String())); err != nil {
+		log.Printf("failed to write body: %v", err)
+	}
+}
+
+// handleNewSSHServer handles SSH server registration requests.
 //
 // - Method: POST
 // - Client: Browser

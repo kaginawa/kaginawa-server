@@ -86,6 +86,7 @@ func main() {
 	r.HandleFunc("/admin", handleAdmin)
 	r.HandleFunc("/new-key", handleNewAPIKey)
 	r.HandleFunc("/new-server", handleNewSSHServer)
+	r.HandleFunc("/gen-key", handleGenerateKey)
 	r.HandleFunc("/servers/{id}", handleSSHServer)
 	r.HandleFunc("/measure/{kb}", handleMeasure)
 	r.PathPrefix("/assets/").Handler(http.StripPrefix("/assets/", http.FileServer(http.Dir("./assets"))))
