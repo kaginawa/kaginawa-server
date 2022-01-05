@@ -98,13 +98,3 @@ func safeClose(closer io.Closer, name string) {
 		log.Printf("failed to close %s: %v", name, err)
 	}
 }
-
-func getEnvs(keys ...string) string {
-	for _, key := range keys {
-		value := os.Getenv(key)
-		if len(value) > 0 {
-			return value
-		}
-	}
-	return ""
-}
