@@ -3,7 +3,6 @@ kaginawa-server
 
 [![Actions Status](https://github.com/kaginawa/kaginawa-server/workflows/Go/badge.svg)](https://github.com/kaginawa/kaginawa-server/actions)
 [![Actions Status](https://github.com/kaginawa/kaginawa-server/workflows/Docker/badge.svg)](https://github.com/kaginawa/kaginawa-server/actions)
-[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=kaginawa_kaginawa-server&metric=alert_status)](https://sonarcloud.io/dashboard?id=kaginawa_kaginawa-server)
 [![Go Report Card](https://goreportcard.com/badge/github.com/kaginawa/kaginawa-server)](https://goreportcard.com/report/github.com/kaginawa/kaginawa-server)
 
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/kaginawa/kaginawa-server)
