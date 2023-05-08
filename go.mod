@@ -8,7 +8,7 @@ require (
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/sessions v1.2.1
 	github.com/segmentio/ksuid v1.0.4
-	go.mongodb.org/mongo-driver v1.11.4
+	go.mongodb.org/mongo-driver v1.11.6
 	golang.org/x/crypto v0.8.0
 	golang.org/x/oauth2 v0.7.0
 )
