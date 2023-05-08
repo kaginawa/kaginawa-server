@@ -5,27 +5,27 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-    - name: Set up Go 1.16
-      uses: actions/setup-go@v1
+    - name: Set up Go 1.20
+      uses: actions/setup-go@v4
       with:
-        go-version: 1.16
+        go-version: "1.20"
       id: go
-    - name: Set up Node.js 14.x
-      uses: actions/setup-node@v1
+    - name: Set up Node.js 20.x
+      uses: actions/setup-node@v3
       with:
-        node-version: 14.x
+        node-version: 20.x
     - name: Check out
-      uses: actions/checkout@v1
-    - name: Go get
-      run: go get -v -t -d ./...
+      uses: actions/checkout@v3
+    - name: Go mod download
+      run: go mod download
     - name: Build
       run: go build -v ./cmd/server
     - name: Test
       run: make test
     - name: Golint
       run: |
-        GOBIN=$PWD/bin go get golang.org/x/lint/golint
-        ./bin/golint -set_exit_status ./...
+        go get golang.org/x/lint/golint@latest
+        golint -set_exit_status ./...
     - name: ESLint
       run: |
         npm i
