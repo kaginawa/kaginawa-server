@@ -3,7 +3,7 @@ module github.com/kaginawa/kaginawa-server
 go 1.20
 
 require (
-	github.com/aws/aws-sdk-go v1.44.273
+	github.com/aws/aws-sdk-go v1.44.294
 	github.com/gorilla/mux v1.8.0
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/sessions v1.2.1
