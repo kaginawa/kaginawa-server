@@ -1,4 +1,4 @@
-package kaginawa
+package auth
 
 import (
 	"bytes"
@@ -13,6 +13,7 @@ import (
 
 	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
+	"github.com/kaginawa/kaginawa-server/internal/database"
 )
 
 // UserSession defines user session attributes.
@@ -56,11 +57,11 @@ func (s UserSession) DecodeValues() (map[interface{}]interface{}, error) {
 // SessionStore implements gorilla/sessions sessions.Store.
 type SessionStore struct {
 	options sessions.Options
-	db      DB
+	db      database.DB
 }
 
 // NewSessionDB constructs a SessionStore instance.
-func NewSessionDB(db DB, expireSec int) (*SessionStore, error) {
+func NewSessionDB(db database.DB, expireSec int) (*SessionStore, error) {
 	store := &SessionStore{db: db}
 	store.options.Path = "/"
 	store.options.HttpOnly = true

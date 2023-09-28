@@ -3,6 +3,8 @@ package kaginawa
 import (
 	"fmt"
 	"time"
+
+	"github.com/kaginawa/kaginawa-server/internal/database"
 )
 
 // Report defines all Report attributes
@@ -91,7 +93,7 @@ type USBDevice struct {
 }
 
 // MatchReports generates list of reports filtered by specified matcher function.
-func MatchReports(db DB, minutes int, projection Projection, matcher func(r Report) bool) ([]Report, error) {
+func MatchReports(db database.DB, minutes int, projection database.Projection, matcher func(r Report) bool) ([]Report, error) {
 	reports, err := db.ListReports(0, 0, minutes, projection)
 	if err != nil {
 		return nil, err

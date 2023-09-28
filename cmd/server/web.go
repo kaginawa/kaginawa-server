@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/kaginawa/kaginawa-server/internal/database"
 	"github.com/kaginawa/kaginawa-server/internal/kaginawa"
 	"github.com/segmentio/ksuid"
 )
@@ -173,14 +174,14 @@ func handleFind(w http.ResponseWriter, r *http.Request) {
 		}
 		http.Redirect(w, r, "/nodes/"+report.ID, http.StatusSeeOther)
 	case "custom-id":
-		reports, err := db.ListReportsByCustomID(findString, -1, kaginawa.IDAttributes)
+		reports, err := db.ListReportsByCustomID(findString, -1, database.IDAttributes)
 		if err != nil {
 			handleFindError(w, r, "Database unavailable")
 			return
 		}
 		handleFindResult(w, r, findBy, findString, reports)
 	case "hostname":
-		matches, err := kaginawa.MatchReports(db, 0, kaginawa.ListViewAttributes, func(r kaginawa.Report) bool {
+		matches, err := kaginawa.MatchReports(db, 0, database.ListViewAttributes, func(r kaginawa.Report) bool {
 			return r.Hostname == findString
 		})
 		if err != nil {
@@ -189,7 +190,7 @@ func handleFind(w http.ResponseWriter, r *http.Request) {
 		}
 		handleFindResult(w, r, findBy, findString, matches)
 	case "global-addr":
-		matches, err := kaginawa.MatchReports(db, 0, kaginawa.ListViewAttributes, func(r kaginawa.Report) bool {
+		matches, err := kaginawa.MatchReports(db, 0, database.ListViewAttributes, func(r kaginawa.Report) bool {
 			return r.GlobalIP == findString || r.GlobalHost == findString
 		})
 		if err != nil {
@@ -198,7 +199,7 @@ func handleFind(w http.ResponseWriter, r *http.Request) {
 		}
 		handleFindResult(w, r, findBy, findString, matches)
 	case "local-addr":
-		matches, err := kaginawa.MatchReports(db, 0, kaginawa.ListViewAttributes, func(r kaginawa.Report) bool {
+		matches, err := kaginawa.MatchReports(db, 0, database.ListViewAttributes, func(r kaginawa.Report) bool {
 			return r.LocalIPv4 == findString || r.LocalIPv6 == findString
 		})
 		if err != nil {
@@ -210,7 +211,7 @@ func handleFind(w http.ResponseWriter, r *http.Request) {
 		if !strings.HasPrefix(findString, "v") {
 			findString = "v" + findString
 		}
-		matches, err := kaginawa.MatchReports(db, 0, kaginawa.ListViewAttributes, func(r kaginawa.Report) bool {
+		matches, err := kaginawa.MatchReports(db, 0, database.ListViewAttributes, func(r kaginawa.Report) bool {
 			return r.AgentVersion == findString
 		})
 		if err != nil {
@@ -293,14 +294,14 @@ func handleNodesWeb(w http.ResponseWriter, r *http.Request) {
 	var reports []kaginawa.Report
 	var count int
 	if len(customID+hostname+globalAddr+localAddr+version) == 0 {
-		reports, count, err = db.CountAndListReports(offset, limit, minutes, kaginawa.ListViewAttributes)
+		reports, count, err = db.CountAndListReports(offset, limit, minutes, database.ListViewAttributes)
 		if err != nil {
 			log.Printf("failed to list reports: %v", err)
 			http.Error(w, "Database unavailable", http.StatusInternalServerError)
 			return
 		}
 	} else if len(customID) > 0 && len(hostname+globalAddr+localAddr+version) == 0 {
-		matches, err := db.ListReportsByCustomID(customID, minutes, kaginawa.ListViewAttributes)
+		matches, err := db.ListReportsByCustomID(customID, minutes, database.ListViewAttributes)
 		if err != nil {
 			log.Printf("failed to list reports: %v", err)
 			http.Error(w, "Database unavailable", http.StatusInternalServerError)
@@ -313,7 +314,7 @@ func handleNodesWeb(w http.ResponseWriter, r *http.Request) {
 		if !strings.HasPrefix(version, "v") {
 			version = "v" + version
 		}
-		matches, err := kaginawa.MatchReports(db, minutes, kaginawa.ListViewAttributes, func(r kaginawa.Report) bool {
+		matches, err := kaginawa.MatchReports(db, minutes, database.ListViewAttributes, func(r kaginawa.Report) bool {
 			if len(customID) > 0 && r.CustomID == customID {
 				return true
 			}
@@ -366,14 +367,14 @@ func handleNodesAPI(w http.ResponseWriter, r *http.Request) {
 			minutes = n
 		}
 	}
-	projection := kaginawa.AllAttributes
+	projection := database.AllAttributes
 	switch r.URL.Query().Get("projection") {
 	case "id":
-		projection = kaginawa.IDAttributes
+		projection = database.IDAttributes
 	case "list-view":
-		projection = kaginawa.ListViewAttributes
+		projection = database.ListViewAttributes
 	case "measurement":
-		projection = kaginawa.MeasurementAttributes
+		projection = database.MeasurementAttributes
 	}
 	var reports []kaginawa.Report
 	if len(customID) > 0 {
@@ -522,8 +523,8 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	}
 	execTemplate(w, "admin", struct {
 		Meta       meta
-		APIKeys    []kaginawa.APIKey
-		SSHServers []kaginawa.SSHServer
+		APIKeys    []database.APIKey
+		SSHServers []database.SSHServer
 	}{
 		newMeta(r, "Admin"),
 		keys,
@@ -558,7 +559,7 @@ func handleNewAPIKey(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Key is empty", http.StatusBadRequest)
 		return
 	}
-	if err := db.PutAPIKey(kaginawa.APIKey{Key: k, Label: l, Admin: a}); err != nil {
+	if err := db.PutAPIKey(database.APIKey{Key: k, Label: l, Admin: a}); err != nil {
 		log.Printf("failed to put api key: %v", err)
 		http.Error(w, "Database unavailable", http.StatusInternalServerError)
 		return
@@ -634,7 +635,7 @@ func handleNewSSHServer(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Key or password is empty", http.StatusBadRequest)
 		return
 	}
-	if err := db.PutSSHServer(kaginawa.SSHServer{Host: h, Port: port, User: u, Key: k, Password: pw}); err != nil {
+	if err := db.PutSSHServer(database.SSHServer{Host: h, Port: port, User: u, Key: k, Password: pw}); err != nil {
 		log.Printf("failed to put ssh server: %v", err)
 		http.Error(w, "Database unavailable", http.StatusInternalServerError)
 		return
@@ -719,14 +720,14 @@ func handleHistories(w http.ResponseWriter, r *http.Request) {
 			begin = time.Unix(raw, 0)
 		}
 	}
-	projection := kaginawa.AllAttributes
+	projection := database.AllAttributes
 	switch r.URL.Query().Get("projection") {
 	case "id":
-		projection = kaginawa.IDAttributes
+		projection = database.IDAttributes
 	case "list-view":
-		projection = kaginawa.ListViewAttributes
+		projection = database.ListViewAttributes
 	case "measurement":
-		projection = kaginawa.MeasurementAttributes
+		projection = database.MeasurementAttributes
 	}
 	logs, err := db.ListHistory(id, begin, end, projection)
 	if err != nil {

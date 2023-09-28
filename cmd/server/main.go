@@ -7,12 +7,12 @@ import (
 	"os"
 
 	"github.com/gorilla/mux"
-	"github.com/kaginawa/kaginawa-server/internal/kaginawa"
+	"github.com/kaginawa/kaginawa-server/internal/database"
 )
 
 const defaultPort = "8080"
 
-var db kaginawa.DB
+var db database.DB
 
 func main() {
 	// Initialize html template
@@ -28,13 +28,13 @@ func main() {
 	dynamoKeys := os.Getenv("DYNAMO_KEYS")
 	sessionTTL := 0
 	if len(mongoURI) > 0 {
-		mongoDB, err := kaginawa.NewMongoDB(mongoURI)
+		mongoDB, err := database.NewMongoDB(mongoURI)
 		if err != nil {
 			log.Fatalf("failed to initialize database: %v", err)
 		}
 		db = mongoDB
 	} else if len(dynamoKeys) > 0 {
-		dynamoDB, err := kaginawa.NewDynamoDB()
+		dynamoDB, err := database.NewDynamoDB()
 		if err != nil {
 			log.Fatalf("failed to initialize database: %v", err)
 		}

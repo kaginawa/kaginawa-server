@@ -1,6 +1,11 @@
-package kaginawa
+package database
 
-import "testing"
+import (
+	"testing"
+
+	"github.com/kaginawa/kaginawa-server/internal/auth"
+	"github.com/kaginawa/kaginawa-server/internal/kaginawa"
+)
 
 func TestServer(t *testing.T) {
 	server := SSHServer{
@@ -43,7 +48,7 @@ func TestDB_SSHServers(t *testing.T) {
 
 func TestDB_Reports(t *testing.T) {
 	var db DB = NewMemDB()
-	if err := db.PutReport(Report{
+	if err := db.PutReport(kaginawa.Report{
 		ID:      "f0:18:98:eb:c7:27",
 		Trigger: 3,
 		Success: true,
@@ -85,7 +90,7 @@ func TestDB_Reports(t *testing.T) {
 
 func TestDB_UserSessions(t *testing.T) {
 	var db = NewMemDB()
-	if err := db.PutUserSession(UserSession{
+	if err := db.PutUserSession(auth.UserSession{
 		ID: "test-session",
 	}); err != nil {
 		t.Fatal(err)

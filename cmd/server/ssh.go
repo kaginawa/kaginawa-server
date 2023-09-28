@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
+	"github.com/kaginawa/kaginawa-server/internal/database"
 	"github.com/kaginawa/kaginawa-server/internal/kaginawa"
 	"golang.org/x/crypto/ssh"
 )
@@ -108,7 +109,7 @@ func handleCommand(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Database unavailable", http.StatusInternalServerError)
 		return
 	}
-	var server kaginawa.SSHServer
+	var server database.SSHServer
 	for _, s := range servers {
 		if s.Host == report.SSHServerHost {
 			server = s
@@ -175,7 +176,7 @@ func createSSHConfig(user, key, password string) (*ssh.ClientConfig, error) {
 	return &config, nil
 }
 
-func execWithTimeout(s kaginawa.SSHServer, r *kaginawa.Report, sc, tc *ssh.ClientConfig, cmd string, timeout time.Duration) ([]byte, error) {
+func execWithTimeout(s database.SSHServer, r *kaginawa.Report, sc, tc *ssh.ClientConfig, cmd string, timeout time.Duration) ([]byte, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
 	ch := make(chan commandResponse, 1)
@@ -191,7 +192,7 @@ func execWithTimeout(s kaginawa.SSHServer, r *kaginawa.Report, sc, tc *ssh.Clien
 	}
 }
 
-func exec(s kaginawa.SSHServer, r *kaginawa.Report, sc, tc *ssh.ClientConfig, cmd string) commandResponse {
+func exec(s database.SSHServer, r *kaginawa.Report, sc, tc *ssh.ClientConfig, cmd string) commandResponse {
 	// Connect to the ssh server
 	conn, err := ssh.Dial("tcp", s.Addr(), sc)
 	if err != nil {

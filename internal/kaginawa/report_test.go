@@ -3,6 +3,8 @@ package kaginawa
 import (
 	"reflect"
 	"testing"
+
+	"github.com/kaginawa/kaginawa-server/internal/database"
 )
 
 func TestReport(t *testing.T) {
@@ -74,7 +76,7 @@ func TestReport(t *testing.T) {
 }
 
 func TestMatchReports(t *testing.T) {
-	var db DB = NewMemDB()
+	var db database.DB = database.NewMemDB()
 	if err := db.PutReport(Report{
 		ID:       "00:00:00:00:00:01",
 		CustomID: "test1",
@@ -91,7 +93,7 @@ func TestMatchReports(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	res, err := MatchReports(db, 0, ListViewAttributes, func(r Report) bool {
+	res, err := MatchReports(db, 0, database.ListViewAttributes, func(r Report) bool {
 		return r.CustomID == "test1"
 	})
 	if err != nil {

@@ -5,15 +5,15 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/kaginawa/kaginawa-server/internal/kaginawa"
+	"github.com/kaginawa/kaginawa-server/internal/database"
 )
 
 func TestValidateAPIKey(t *testing.T) {
-	db = kaginawa.NewMemDB()
-	if err := db.PutAPIKey(kaginawa.APIKey{Key: "test-normal", Label: "normal key label"}); err != nil {
+	db = database.NewMemDB()
+	if err := db.PutAPIKey(database.APIKey{Key: "test-normal", Label: "normal key label"}); err != nil {
 		t.Fatalf("failed to put test data: %v", err)
 	}
-	if err := db.PutAPIKey(kaginawa.APIKey{Key: "test-admin", Label: "admin key label", Admin: true}); err != nil {
+	if err := db.PutAPIKey(database.APIKey{Key: "test-admin", Label: "admin key label", Admin: true}); err != nil {
 		t.Fatalf("failed to put test data: %v", err)
 	}
 
