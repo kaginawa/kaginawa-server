@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-// Report defines all of Report attributes
+// Report defines all Report attributes
 type Report struct {
 	// Kaginawa shared fields
 	ID             string      `json:"id" bson:"id"`                                       // MAC address

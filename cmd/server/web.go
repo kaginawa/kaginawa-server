@@ -5,16 +5,16 @@ import (
 	"fmt"
 	"html"
 	"html/template"
-	"io/ioutil"
 	"log"
 	"net/http"
+	"os"
 	"runtime"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/kaginawa/kaginawa-server"
+	"github.com/kaginawa/kaginawa-server/internal/kaginawa"
 	"github.com/segmentio/ksuid"
 )
 
@@ -97,7 +97,7 @@ func remoteIP(r *http.Request) string {
 	if header := r.Header.Get("X-Forwarded-For"); len(header) > 0 {
 		return strings.Split(header, ",")[0]
 	}
-	return trimPort(r.RemoteAddr)
+	return r.RemoteAddr[0:strings.LastIndex(r.RemoteAddr, ":")]
 }
 
 // handleIndex handles index requests.
@@ -773,7 +773,7 @@ func handleNodeDelete(w http.ResponseWriter, r *http.Request) {
 }
 
 func loadTemplates(dir string) []string {
-	dirEntries, err := ioutil.ReadDir(dir)
+	dirEntries, err := os.ReadDir(dir)
 	if err != nil {
 		log.Fatalf("failed to read template directory \"%s\": %v", dir, err)
 	}

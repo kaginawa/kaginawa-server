@@ -2,6 +2,7 @@ package kaginawa
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"strings"
@@ -31,7 +32,7 @@ type MongoDB struct {
 	instance *mongo.Database
 }
 
-// NewMongoDB will creates MongoDB instance that implements DB interface.
+// NewMongoDB will create MongoDB instance that implements DB interface.
 func NewMongoDB(endpoint string) (*MongoDB, error) {
 	client, err := mongo.Connect(context.Background(), options.Client().ApplyURI(endpoint).SetRetryWrites(false))
 	if err != nil {
@@ -53,7 +54,7 @@ func (db *MongoDB) ValidateAPIKey(key string) (bool, string, error) {
 	// Retrieve from database
 	result := db.instance.Collection(keyCollection).FindOne(context.Background(), bson.M{"key": key})
 	if result.Err() != nil {
-		if result.Err() == mongo.ErrNoDocuments {
+		if errors.Is(result.Err(), mongo.ErrNoDocuments) {
 			return false, "", nil
 		}
 		return false, "", result.Err()
@@ -78,7 +79,7 @@ func (db *MongoDB) ValidateAdminAPIKey(key string) (bool, string, error) {
 	// Retrieve from database
 	result := db.instance.Collection(keyCollection).FindOne(context.Background(), bson.M{"key": key, "admin": true})
 	if result.Err() != nil {
-		if result.Err() == mongo.ErrNoDocuments {
+		if errors.Is(result.Err(), mongo.ErrNoDocuments) {
 			return false, "", nil
 		}
 		return false, "", result.Err()
@@ -151,7 +152,7 @@ func (db *MongoDB) ListSSHServers() ([]SSHServer, error) {
 func (db *MongoDB) GetSSHServerByHost(host string) (*SSHServer, error) {
 	result := db.instance.Collection(serverCollection).FindOne(context.Background(), bson.M{"host": host})
 	if result.Err() != nil {
-		if result.Err() == mongo.ErrNoDocuments {
+		if errors.Is(result.Err(), mongo.ErrNoDocuments) {
 			return nil, nil
 		}
 		return nil, result.Err()
@@ -232,7 +233,7 @@ func (db *MongoDB) CountAndListReports(skip, limit, minutes int, projection Proj
 func (db *MongoDB) GetReportByID(id string) (*Report, error) {
 	result := db.instance.Collection(nodeCollection).FindOne(context.Background(), bson.M{"id": id})
 	if result.Err() != nil {
-		if result.Err() == mongo.ErrNoDocuments {
+		if errors.Is(result.Err(), mongo.ErrNoDocuments) {
 			return nil, nil
 		}
 		return nil, result.Err()
@@ -283,7 +284,7 @@ func (db *MongoDB) ListHistory(id string, begin time.Time, end time.Time, projec
 func (db *MongoDB) GetUserSession(id string) (*UserSession, error) {
 	result := db.instance.Collection(sessionCollection).FindOne(context.Background(), bson.M{"sid": id})
 	if result.Err() != nil {
-		if result.Err() == mongo.ErrNoDocuments {
+		if errors.Is(result.Err(), mongo.ErrNoDocuments) {
 			return nil, nil
 		}
 		return nil, result.Err()

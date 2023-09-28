@@ -19,7 +19,7 @@ type MemDB struct {
 	sessionsMutex sync.RWMutex
 }
 
-// NewMemDB will creates in-memory DB instance that implements DB interface.
+// NewMemDB will create in-memory DB instance that implements DB interface.
 func NewMemDB() *MemDB {
 	return &MemDB{
 		keys:     make(map[string]APIKey),

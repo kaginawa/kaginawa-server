@@ -32,7 +32,7 @@ type DynamoDB struct {
 	sessionsTTLDays int
 }
 
-// NewDynamoDB will creates AWS DynamoDB instance that implements DB interface.
+// NewDynamoDB will create AWS DynamoDB instance that implements DB interface.
 func NewDynamoDB() (*DynamoDB, error) {
 	s := session.Must(session.NewSession(&aws.Config{Region: aws.String(os.Getenv("AWS_DEFAULT_REGION"))}))
 	d := dynamodb.New(s)

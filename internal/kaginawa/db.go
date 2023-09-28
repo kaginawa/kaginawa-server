@@ -43,7 +43,7 @@ type DB interface {
 	ListSSHServers() ([]SSHServer, error)
 	// GetSSHServerByHost queries a server by host.
 	GetSSHServerByHost(host string) (*SSHServer, error)
-	// PutSSHServer puts a ssh server entry.
+	// PutSSHServer puts ssh server entry.
 	PutSSHServer(server SSHServer) error
 	// PutReport puts a report.
 	PutReport(report Report) error
@@ -76,7 +76,7 @@ type APIKey struct {
 	Admin bool   `bson:"admin"`
 }
 
-// SSHServer defines database item of a ssh server.
+// SSHServer defines database item of ssh server.
 type SSHServer struct {
 	Host     string `json:"host" bson:"host"`
 	Port     int    `json:"port" bson:"port"`
