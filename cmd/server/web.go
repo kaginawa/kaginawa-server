@@ -91,14 +91,11 @@ func initTemplate(dir string) {
 }
 
 func remoteIP(r *http.Request) string {
-	cfConnectingIP := r.Header.Get("CF-Connecting-IP")
-	if len(cfConnectingIP) > 0 {
-		return cfConnectingIP
+	if header := r.Header.Get("CF-Connecting-IP"); len(header) > 0 {
+		return header
 	}
-	forwardedFor := r.Header.Get("X-Forwarded-For")
-	if len(forwardedFor) > 0 {
-		list := strings.Split(forwardedFor, ",")
-		return list[0]
+	if header := r.Header.Get("X-Forwarded-For"); len(header) > 0 {
+		return strings.Split(header, ",")[0]
 	}
 	return trimPort(r.RemoteAddr)
 }
