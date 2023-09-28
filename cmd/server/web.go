@@ -90,16 +90,14 @@ func initTemplate(dir string) {
 	}
 }
 
-func remoteIP(r *http.Request) (ip string) {
-	forwardedFor := r.Header.Get("X-Forwarded-For")
-	if len(forwardedFor) > 0 {
-		list := strings.Split(forwardedFor, ",")
-		ip = list[len(list)-1]
+func remoteIP(r *http.Request) string {
+	if header := r.Header.Get("CF-Connecting-IP"); len(header) > 0 {
+		return header
 	}
-	if len(ip) == 0 {
-		ip = trimPort(r.RemoteAddr)
+	if header := r.Header.Get("X-Forwarded-For"); len(header) > 0 {
+		return strings.Split(header, ",")[0]
 	}
-	return
+	return trimPort(r.RemoteAddr)
 }
 
 // handleIndex handles index requests.
