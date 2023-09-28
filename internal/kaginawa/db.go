@@ -1,12 +1,9 @@
-package database
+package kaginawa
 
 import (
 	"fmt"
 	"sync"
 	"time"
-
-	"github.com/kaginawa/kaginawa-server/internal/auth"
-	"github.com/kaginawa/kaginawa-server/internal/kaginawa"
 )
 
 var (
@@ -49,25 +46,25 @@ type DB interface {
 	// PutSSHServer puts ssh server entry.
 	PutSSHServer(server SSHServer) error
 	// PutReport puts a report.
-	PutReport(report kaginawa.Report) error
+	PutReport(report Report) error
 	// CountReports counts number of reports.
 	CountReports() (int, error)
 	// ListReports scans list of reports.
-	ListReports(skip, limit, minutes int, projection Projection) ([]kaginawa.Report, error)
+	ListReports(skip, limit, minutes int, projection Projection) ([]Report, error)
 	// CountAndListReports scans list of reports with total count.
-	CountAndListReports(skip, limit, minutes int, projection Projection) ([]kaginawa.Report, int, error)
+	CountAndListReports(skip, limit, minutes int, projection Projection) ([]Report, int, error)
 	// GetReportByID queries a report by id. Returns (nil, nil) if not found.
-	GetReportByID(id string) (*kaginawa.Report, error)
+	GetReportByID(id string) (*Report, error)
 	// ListReportsByCustomID queries list of reports by custom id.
-	ListReportsByCustomID(customID string, minutes int, projection Projection) ([]kaginawa.Report, error)
+	ListReportsByCustomID(customID string, minutes int, projection Projection) ([]Report, error)
 	// DeleteReport deletes a report. Histories are preserved.
 	DeleteReport(id string) error
 	// ListHistory queries list of history.
-	ListHistory(id string, begin time.Time, end time.Time, projection Projection) ([]kaginawa.Report, error)
+	ListHistory(id string, begin time.Time, end time.Time, projection Projection) ([]Report, error)
 	// GetUserSession gets a user session.
-	GetUserSession(id string) (*auth.UserSession, error)
+	GetUserSession(id string) (*UserSession, error)
 	// PutUserSession puts a user session.
-	PutUserSession(session auth.UserSession) error
+	PutUserSession(session UserSession) error
 	// DeleteUserSession deletes a user session.
 	DeleteUserSession(id string) error
 }
@@ -94,12 +91,12 @@ func (s SSHServer) Addr() string {
 }
 
 // MatchReports generates list of reports filtered by specified matcher function.
-func MatchReports(db DB, minutes int, projection Projection, matcher func(r kaginawa.Report) bool) ([]kaginawa.Report, error) {
+func MatchReports(db DB, minutes int, projection Projection, matcher func(r Report) bool) ([]Report, error) {
 	reports, err := db.ListReports(0, 0, minutes, projection)
 	if err != nil {
 		return nil, err
 	}
-	var matches []kaginawa.Report
+	var matches []Report
 	for _, report := range reports {
 		if matcher(report) {
 			matches = append(matches, report)

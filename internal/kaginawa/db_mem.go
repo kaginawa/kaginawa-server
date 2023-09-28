@@ -1,20 +1,17 @@
-package database
+package kaginawa
 
 import (
 	"sync"
 	"time"
-
-	"github.com/kaginawa/kaginawa-server/internal/auth"
-	"github.com/kaginawa/kaginawa-server/internal/kaginawa"
 )
 
 // MemDB implements in-memory store for testing.
 type MemDB struct {
 	keys          map[string]APIKey
 	servers       map[string]SSHServer
-	nodes         map[string]kaginawa.Report
-	sessions      map[string]auth.UserSession
-	logs          []kaginawa.Report
+	nodes         map[string]Report
+	sessions      map[string]UserSession
+	logs          []Report
 	keysMutex     sync.RWMutex
 	serversMutex  sync.RWMutex
 	nodesMutex    sync.RWMutex
@@ -27,9 +24,9 @@ func NewMemDB() *MemDB {
 	return &MemDB{
 		keys:     make(map[string]APIKey),
 		servers:  make(map[string]SSHServer),
-		nodes:    make(map[string]kaginawa.Report),
-		logs:     make([]kaginawa.Report, 0),
-		sessions: make(map[string]auth.UserSession),
+		nodes:    make(map[string]Report),
+		logs:     make([]Report, 0),
+		sessions: make(map[string]UserSession),
 	}
 }
 
@@ -111,7 +108,7 @@ func (db *MemDB) PutSSHServer(server SSHServer) error {
 }
 
 // PutReport implements same signature of the DB interface.
-func (db *MemDB) PutReport(report kaginawa.Report) error {
+func (db *MemDB) PutReport(report Report) error {
 	db.nodesMutex.Lock()
 	db.logsMutex.Lock()
 	defer db.nodesMutex.Unlock()
@@ -129,10 +126,10 @@ func (db *MemDB) CountReports() (int, error) {
 }
 
 // ListReports implements same signature of the DB interface.
-func (db *MemDB) ListReports(skip, limit, _ int, _ Projection) ([]kaginawa.Report, error) {
+func (db *MemDB) ListReports(skip, limit, _ int, _ Projection) ([]Report, error) {
 	db.nodesMutex.RLock()
 	defer db.nodesMutex.RUnlock()
-	var slice []kaginawa.Report
+	var slice []Report
 	var count int
 	for _, v := range db.nodes {
 		count++
@@ -148,10 +145,10 @@ func (db *MemDB) ListReports(skip, limit, _ int, _ Projection) ([]kaginawa.Repor
 }
 
 // CountAndListReports implements same signature of the DB interface.
-func (db *MemDB) CountAndListReports(skip, limit, _ int, _ Projection) ([]kaginawa.Report, int, error) {
+func (db *MemDB) CountAndListReports(skip, limit, _ int, _ Projection) ([]Report, int, error) {
 	db.nodesMutex.RLock()
 	defer db.nodesMutex.RUnlock()
-	var slice []kaginawa.Report
+	var slice []Report
 	var count int
 	for _, v := range db.nodes {
 		count++
@@ -167,7 +164,7 @@ func (db *MemDB) CountAndListReports(skip, limit, _ int, _ Projection) ([]kagina
 }
 
 // GetReportByID implements same signature of the DB interface.
-func (db *MemDB) GetReportByID(id string) (*kaginawa.Report, error) {
+func (db *MemDB) GetReportByID(id string) (*Report, error) {
 	db.nodesMutex.RLock()
 	defer db.nodesMutex.RUnlock()
 	report, ok := db.nodes[id]
@@ -178,10 +175,10 @@ func (db *MemDB) GetReportByID(id string) (*kaginawa.Report, error) {
 }
 
 // ListReportsByCustomID implements same signature of the DB interface.
-func (db *MemDB) ListReportsByCustomID(customID string, _ int, _ Projection) ([]kaginawa.Report, error) {
+func (db *MemDB) ListReportsByCustomID(customID string, _ int, _ Projection) ([]Report, error) {
 	db.nodesMutex.RLock()
 	defer db.nodesMutex.RUnlock()
-	var slice []kaginawa.Report
+	var slice []Report
 	for _, v := range db.nodes {
 		if v.CustomID == customID {
 			slice = append(slice, v)
@@ -199,10 +196,10 @@ func (db *MemDB) DeleteReport(id string) error {
 }
 
 // ListHistory implements same signature of the DB interface.
-func (db *MemDB) ListHistory(id string, begin time.Time, end time.Time, _ Projection) ([]kaginawa.Report, error) {
+func (db *MemDB) ListHistory(id string, begin time.Time, end time.Time, _ Projection) ([]Report, error) {
 	db.nodesMutex.RLock()
 	defer db.nodesMutex.RUnlock()
-	var slice []kaginawa.Report
+	var slice []Report
 	for _, l := range db.logs {
 		t := time.Unix(l.ServerTime, 0)
 		if l.ID == id && t.Before(begin) && t.After(end) {
@@ -213,7 +210,7 @@ func (db *MemDB) ListHistory(id string, begin time.Time, end time.Time, _ Projec
 }
 
 // GetUserSession implements same signature of the DB interface.
-func (db *MemDB) GetUserSession(id string) (*auth.UserSession, error) {
+func (db *MemDB) GetUserSession(id string) (*UserSession, error) {
 	db.sessionsMutex.RLock()
 	defer db.sessionsMutex.RUnlock()
 	v, ok := db.sessions[id]
@@ -224,7 +221,7 @@ func (db *MemDB) GetUserSession(id string) (*auth.UserSession, error) {
 }
 
 // PutUserSession implements same signature of the DB interface.
-func (db *MemDB) PutUserSession(session auth.UserSession) error {
+func (db *MemDB) PutUserSession(session UserSession) error {
 	db.sessionsMutex.Lock()
 	defer db.sessionsMutex.Unlock()
 	db.sessions[session.ID] = session

@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kaginawa/kaginawa-server/internal/database"
 	"github.com/kaginawa/kaginawa-server/internal/kaginawa"
 )
 
@@ -87,14 +86,14 @@ func handleReport(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var msg reply
-	if len(database.SSHServers) > 0 {
-		i := rand.Int() % len(database.SSHServers)
+	if len(kaginawa.SSHServers) > 0 {
+		i := rand.Int() % len(kaginawa.SSHServers)
 		msg = reply{
-			SSHServerHost: database.SSHServers[i].Host,
-			SSHServerPort: database.SSHServers[i].Port,
-			SSHServerUser: database.SSHServers[i].User,
-			SSHKey:        database.SSHServers[i].Key,
-			SSHPassword:   database.SSHServers[i].Password,
+			SSHServerHost: kaginawa.SSHServers[i].Host,
+			SSHServerPort: kaginawa.SSHServers[i].Port,
+			SSHServerUser: kaginawa.SSHServers[i].User,
+			SSHKey:        kaginawa.SSHServers[i].Key,
+			SSHPassword:   kaginawa.SSHServers[i].Password,
 		}
 	}
 	rawReply, err := json.Marshal(msg)

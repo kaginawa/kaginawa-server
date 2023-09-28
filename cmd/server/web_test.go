@@ -7,7 +7,6 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/kaginawa/kaginawa-server/internal/database"
 	"github.com/kaginawa/kaginawa-server/internal/kaginawa"
 )
 
@@ -24,11 +23,11 @@ func TestHandleNodes_ok(t *testing.T) {
 	initTemplate("../../template")
 
 	// Prepare database
-	db = database.NewMemDB()
+	db = kaginawa.NewMemDB()
 	if err := db.PutReport(testReport); err != nil {
 		t.Fatalf("failed to put test data: %v", err)
 	}
-	if err := db.PutAPIKey(database.APIKey{Key: testAPIKey, Label: "admin key", Admin: true}); err != nil {
+	if err := db.PutAPIKey(kaginawa.APIKey{Key: testAPIKey, Label: "admin key", Admin: true}); err != nil {
 		t.Fatalf("failed to put test key: %v", err)
 	}
 
@@ -64,8 +63,8 @@ func TestHandleNodes_limitedAccess(t *testing.T) {
 	initTemplate("../../template")
 
 	// Prepare database
-	db = database.NewMemDB()
-	if err := db.PutAPIKey(database.APIKey{Key: testAPIKey, Label: "Test API Key"}); err != nil {
+	db = kaginawa.NewMemDB()
+	if err := db.PutAPIKey(kaginawa.APIKey{Key: testAPIKey, Label: "Test API Key"}); err != nil {
 		t.Fatalf("failed to put test key: %v", err)
 	}
 

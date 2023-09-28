@@ -9,7 +9,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/sessions"
-	"github.com/kaginawa/kaginawa-server/internal/auth"
+	"github.com/kaginawa/kaginawa-server/internal/kaginawa"
 )
 
 const sessionName = "kaginawa-session"
@@ -24,7 +24,7 @@ type Session struct {
 func initSession(ttlSec int) error {
 	gob.Register(map[string]interface{}{})
 	var err error
-	sessionStore, err = auth.NewSessionDB(db, ttlSec)
+	sessionStore, err = kaginawa.NewSessionDB(db, ttlSec)
 	if err != nil {
 		return err
 	}

@@ -1,4 +1,4 @@
-package database
+package kaginawa
 
 import (
 	"context"
@@ -8,8 +8,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kaginawa/kaginawa-server/internal/auth"
-	"github.com/kaginawa/kaginawa-server/internal/kaginawa"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -180,7 +178,7 @@ func (db *MongoDB) PutSSHServer(server SSHServer) error {
 }
 
 // PutReport implements same signature of the DB interface.
-func (db *MongoDB) PutReport(report kaginawa.Report) error {
+func (db *MongoDB) PutReport(report Report) error {
 	raw, err := bson.Marshal(report)
 	if err != nil {
 		return fmt.Errorf("failed to marshal: %w", err)
@@ -202,7 +200,7 @@ func (db *MongoDB) CountReports() (int, error) {
 }
 
 // ListReports implements same signature of the DB interface.
-func (db *MongoDB) ListReports(skip, limit, minutes int, projection Projection) ([]kaginawa.Report, error) {
+func (db *MongoDB) ListReports(skip, limit, minutes int, projection Projection) ([]Report, error) {
 	opts := &options.FindOptions{Sort: bson.M{"custom_id": 1}, Skip: int64p(skip)}
 	if limit > 0 {
 		opts.Limit = int64p(limit)
@@ -222,7 +220,7 @@ func (db *MongoDB) ListReports(skip, limit, minutes int, projection Projection) 
 }
 
 // CountAndListReports implements same signature of the DB interface.
-func (db *MongoDB) CountAndListReports(skip, limit, minutes int, projection Projection) ([]kaginawa.Report, int, error) {
+func (db *MongoDB) CountAndListReports(skip, limit, minutes int, projection Projection) ([]Report, int, error) {
 	count, err := db.CountReports()
 	if err != nil {
 		return nil, -1, err
@@ -232,7 +230,7 @@ func (db *MongoDB) CountAndListReports(skip, limit, minutes int, projection Proj
 }
 
 // GetReportByID implements same signature of the DB interface.
-func (db *MongoDB) GetReportByID(id string) (*kaginawa.Report, error) {
+func (db *MongoDB) GetReportByID(id string) (*Report, error) {
 	result := db.instance.Collection(nodeCollection).FindOne(context.Background(), bson.M{"id": id})
 	if result.Err() != nil {
 		if errors.Is(result.Err(), mongo.ErrNoDocuments) {
@@ -240,7 +238,7 @@ func (db *MongoDB) GetReportByID(id string) (*kaginawa.Report, error) {
 		}
 		return nil, result.Err()
 	}
-	var report kaginawa.Report
+	var report Report
 	if err := result.Decode(&report); err != nil {
 		return nil, err
 	}
@@ -248,7 +246,7 @@ func (db *MongoDB) GetReportByID(id string) (*kaginawa.Report, error) {
 }
 
 // ListReportsByCustomID implements same signature of the DB interface.
-func (db *MongoDB) ListReportsByCustomID(customID string, minutes int, projection Projection) ([]kaginawa.Report, error) {
+func (db *MongoDB) ListReportsByCustomID(customID string, minutes int, projection Projection) ([]Report, error) {
 	opts := &options.FindOptions{Sort: bson.M{"hostname": 1}}
 	filter := bson.M{"custom_id": customID}
 	if minutes > 0 {
@@ -271,7 +269,7 @@ func (db *MongoDB) DeleteReport(id string) error {
 }
 
 // ListHistory implements same signature of the DB interface.
-func (db *MongoDB) ListHistory(id string, begin time.Time, end time.Time, projection Projection) ([]kaginawa.Report, error) {
+func (db *MongoDB) ListHistory(id string, begin time.Time, end time.Time, projection Projection) ([]Report, error) {
 	opts := db.applyProjection(&options.FindOptions{Sort: bson.M{"server_time": 1}}, projection)
 	filter := bson.M{"id": id, "server_time": bson.M{"$gte": begin.Unix(), "$lte": end.Unix()}}
 	cur, err := db.instance.Collection(logCollection).Find(context.Background(), filter, opts)
@@ -283,7 +281,7 @@ func (db *MongoDB) ListHistory(id string, begin time.Time, end time.Time, projec
 }
 
 // GetUserSession implements same signature of the DB interface.
-func (db *MongoDB) GetUserSession(id string) (*auth.UserSession, error) {
+func (db *MongoDB) GetUserSession(id string) (*UserSession, error) {
 	result := db.instance.Collection(sessionCollection).FindOne(context.Background(), bson.M{"sid": id})
 	if result.Err() != nil {
 		if errors.Is(result.Err(), mongo.ErrNoDocuments) {
@@ -291,7 +289,7 @@ func (db *MongoDB) GetUserSession(id string) (*auth.UserSession, error) {
 		}
 		return nil, result.Err()
 	}
-	var session auth.UserSession
+	var session UserSession
 	if err := result.Decode(&session); err != nil {
 		return nil, err
 	}
@@ -299,7 +297,7 @@ func (db *MongoDB) GetUserSession(id string) (*auth.UserSession, error) {
 }
 
 // PutUserSession implements same signature of the DB interface.
-func (db *MongoDB) PutUserSession(session auth.UserSession) error {
+func (db *MongoDB) PutUserSession(session UserSession) error {
 	session.Time = time.Now().UTC()
 	raw, err := bson.Marshal(session)
 	if err != nil {
@@ -364,10 +362,10 @@ func (db *MongoDB) safeClose(cur *mongo.Cursor) {
 	}
 }
 
-func (db *MongoDB) decodeReports(cur *mongo.Cursor) ([]kaginawa.Report, error) {
-	reports := make([]kaginawa.Report, 0)
+func (db *MongoDB) decodeReports(cur *mongo.Cursor) ([]Report, error) {
+	reports := make([]Report, 0)
 	for cur.Next(context.Background()) {
-		var result kaginawa.Report
+		var result Report
 		if err := cur.Decode(&result); err != nil {
 			return nil, err
 		}

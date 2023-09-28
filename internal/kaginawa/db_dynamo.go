@@ -1,4 +1,4 @@
-package database
+package kaginawa
 
 import (
 	"errors"
@@ -13,8 +13,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/dynamodb"
 	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
 	"github.com/aws/aws-sdk-go/service/dynamodb/expression"
-	"github.com/kaginawa/kaginawa-server/internal/auth"
-	"github.com/kaginawa/kaginawa-server/internal/kaginawa"
 )
 
 const customIDPlaceholder = "-"
@@ -209,7 +207,7 @@ func (db *DynamoDB) PutSSHServer(server SSHServer) error {
 }
 
 // PutReport implements same signature of the DB interface.
-func (db *DynamoDB) PutReport(report kaginawa.Report) error {
+func (db *DynamoDB) PutReport(report Report) error {
 	if len(report.CustomID) == 0 {
 		report.CustomID = customIDPlaceholder
 	}
@@ -244,7 +242,7 @@ func (db *DynamoDB) CountReports() (int, error) {
 
 // ListReports implements same signature of the DB interface.
 // Set limit <= 0 to enable unlimited scans.
-func (db *DynamoDB) ListReports(skip, limit, minutes int, projection Projection) ([]kaginawa.Report, error) {
+func (db *DynamoDB) ListReports(skip, limit, minutes int, projection Projection) ([]Report, error) {
 	builder := expression.NewBuilder()
 	if minutes > 0 {
 		timestamp := time.Now().UTC().Add(-time.Duration(minutes) * time.Minute)
@@ -254,7 +252,7 @@ func (db *DynamoDB) ListReports(skip, limit, minutes int, projection Projection)
 	if err != nil {
 		return nil, fmt.Errorf("failed to build expression: %w", err)
 	}
-	var records []kaginawa.Report
+	var records []Report
 	var count int
 	if err := db.instance.ScanPages(&dynamodb.ScanInput{
 		TableName:                 &db.nodesTable,
@@ -271,7 +269,7 @@ func (db *DynamoDB) ListReports(skip, limit, minutes int, projection Projection)
 			if limit > 0 && len(records) >= limit {
 				return false
 			}
-			var record kaginawa.Report
+			var record Report
 			if err := db.decoder.Decode(&dynamodb.AttributeValue{M: item}, &record); err != nil {
 				log.Printf("skipping error item: %v", err)
 				continue
@@ -286,12 +284,12 @@ func (db *DynamoDB) ListReports(skip, limit, minutes int, projection Projection)
 }
 
 // CountAndListReports implements same signature of the DB interface.
-func (db *DynamoDB) CountAndListReports(skip, limit, minutes int, projection Projection) ([]kaginawa.Report, int, error) {
+func (db *DynamoDB) CountAndListReports(skip, limit, minutes int, projection Projection) ([]Report, int, error) {
 	all, err := db.ListReports(0, 0, minutes, projection)
 	if err != nil {
 		return nil, -1, err
 	}
-	var reports []kaginawa.Report
+	var reports []Report
 	var pos int
 	for _, v := range all {
 		pos++
@@ -307,7 +305,7 @@ func (db *DynamoDB) CountAndListReports(skip, limit, minutes int, projection Pro
 }
 
 // GetReportByID implements same signature of the DB interface.
-func (db *DynamoDB) GetReportByID(id string) (*kaginawa.Report, error) {
+func (db *DynamoDB) GetReportByID(id string) (*Report, error) {
 	hash, err := db.encoder.Encode(struct{ ID string }{id})
 	if err != nil {
 		return nil, fmt.Errorf("invalid report ID: %v", err)
@@ -319,7 +317,7 @@ func (db *DynamoDB) GetReportByID(id string) (*kaginawa.Report, error) {
 	if item.Item == nil {
 		return nil, nil
 	}
-	var report kaginawa.Report
+	var report Report
 	if err := db.decoder.Decode(&dynamodb.AttributeValue{M: item.Item}, &report); err != nil {
 		return nil, err
 	}
@@ -327,7 +325,7 @@ func (db *DynamoDB) GetReportByID(id string) (*kaginawa.Report, error) {
 }
 
 // ListReportsByCustomID implements same signature of the DB interface.
-func (db *DynamoDB) ListReportsByCustomID(customID string, minutes int, projection Projection) ([]kaginawa.Report, error) {
+func (db *DynamoDB) ListReportsByCustomID(customID string, minutes int, projection Projection) ([]Report, error) {
 	if len(customID) == 0 {
 		customID = customIDPlaceholder
 	}
@@ -362,7 +360,7 @@ func (db *DynamoDB) DeleteReport(id string) error {
 }
 
 // ListHistory implements same signature of the DB interface.
-func (db *DynamoDB) ListHistory(id string, begin time.Time, end time.Time, projection Projection) ([]kaginawa.Report, error) {
+func (db *DynamoDB) ListHistory(id string, begin time.Time, end time.Time, projection Projection) ([]Report, error) {
 	keyCond := expression.Key("ID").Equal(expression.Value(id)).And(
 		expression.Key("ServerTime").Between(expression.Value(begin.Unix()), expression.Value(end.Unix())))
 	builder := db.applyProjection(expression.NewBuilder().WithKeyCondition(keyCond), projection)
@@ -381,7 +379,7 @@ func (db *DynamoDB) ListHistory(id string, begin time.Time, end time.Time, proje
 }
 
 // GetUserSession implements same signature of the DB interface.
-func (db *DynamoDB) GetUserSession(id string) (*auth.UserSession, error) {
+func (db *DynamoDB) GetUserSession(id string) (*UserSession, error) {
 	hash, err := db.encoder.Encode(struct{ ID string }{id})
 	if err != nil {
 		return nil, fmt.Errorf("invalid session ID: %w", err)
@@ -393,7 +391,7 @@ func (db *DynamoDB) GetUserSession(id string) (*auth.UserSession, error) {
 	if len(item.Item) == 0 {
 		return nil, nil
 	}
-	var us auth.UserSession
+	var us UserSession
 	if err := db.decoder.Decode(&dynamodb.AttributeValue{M: item.Item}, &us); err != nil {
 		return nil, err
 	}
@@ -401,7 +399,7 @@ func (db *DynamoDB) GetUserSession(id string) (*auth.UserSession, error) {
 }
 
 // PutUserSession implements same signature of the DB interface.
-func (db *DynamoDB) PutUserSession(session auth.UserSession) error {
+func (db *DynamoDB) PutUserSession(session UserSession) error {
 	item, err := db.encoder.Encode(session)
 	if err != nil {
 		return fmt.Errorf("failed to marshal session: %w", err)
@@ -483,11 +481,11 @@ func (db *DynamoDB) findAPIKey(key string) (APIKey, error) {
 	return apiKey, nil
 }
 
-func (db *DynamoDB) queryReports(query *dynamodb.QueryInput) ([]kaginawa.Report, error) {
-	var records []kaginawa.Report
+func (db *DynamoDB) queryReports(query *dynamodb.QueryInput) ([]Report, error) {
+	var records []Report
 	if err := db.instance.QueryPages(query, func(output *dynamodb.QueryOutput, lastPage bool) bool {
 		for _, item := range output.Items {
-			var record kaginawa.Report
+			var record Report
 			if err := db.decoder.Decode(&dynamodb.AttributeValue{M: item}, &record); err != nil {
 				log.Printf("skipping error item: %v", err)
 				continue
