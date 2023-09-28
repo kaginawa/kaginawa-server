@@ -1,8 +1,6 @@
 package kaginawa
 
-import (
-	"testing"
-)
+import "testing"
 
 func TestServer(t *testing.T) {
 	server := SSHServer{
