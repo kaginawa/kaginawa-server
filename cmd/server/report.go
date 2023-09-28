@@ -3,7 +3,7 @@ package main
 import (
 	"compress/gzip"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"log"
 	"math/rand"
 	"net"
@@ -11,10 +11,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kaginawa/kaginawa-server"
+	"github.com/kaginawa/kaginawa-server/internal/kaginawa"
 )
 
-// reply defines all of reply message attributes
+// reply defines all reply message attributes
 type reply struct {
 	SSHServerHost string `json:"ssh_host,omitempty"`
 	SSHServerPort int    `json:"ssh_port,omitempty"`
@@ -49,7 +49,7 @@ func handleReport(w http.ResponseWriter, r *http.Request) {
 		}
 		reader = r
 	}
-	body, err := ioutil.ReadAll(reader)
+	body, err := io.ReadAll(reader)
 	if err != nil {
 		log.Printf("failed to read request body: %v", err)
 		http.Error(w, "Response read error", http.StatusInternalServerError)
@@ -129,12 +129,4 @@ func reverseLookup(globalIP string) (string, error) {
 		return globalIP, nil // no lookup address
 	}
 	return strings.TrimRight(names[0], "."), nil
-}
-
-func trimPort(addr string) string {
-	i := strings.LastIndex(addr, ":")
-	if i > 0 {
-		return addr[0:i]
-	}
-	return addr
 }

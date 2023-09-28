@@ -1,7 +1,7 @@
 package main
 
 import (
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -17,6 +17,7 @@ const maxLengthKB = 10 * 1024 // 10MB
 //   - GET /measure/0 --- respond empty body for round trip time measurement
 //   - GET /measure/500  --- respond 500KB body
 //   - POST /measure/500 --- receive 500KB body
+//
 // - Client: Kaginawa
 // - Access: Normal
 // - Response: Raw
@@ -46,7 +47,7 @@ func handleMeasure(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		defer safeClose(r.Body, "measure body")
-		_, err := ioutil.ReadAll(r.Body)
+		_, err := io.ReadAll(r.Body)
 		if err != nil {
 			log.Printf("failed to write measure body: %v", err)
 			return

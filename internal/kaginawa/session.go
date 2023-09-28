@@ -2,16 +2,16 @@ package kaginawa
 
 import (
 	"bytes"
-	base32 "encoding/base32"
+	"encoding/base32"
 	"encoding/base64"
 	"encoding/gob"
 	"errors"
 	"fmt"
-	"github.com/gorilla/securecookie"
 	"net/http"
 	"strings"
 	"time"
 
+	"github.com/gorilla/securecookie"
 	"github.com/gorilla/sessions"
 )
 
@@ -24,7 +24,7 @@ type UserSession struct {
 	TTL     int64            `bson:"-"`                   // Used by DynamoDB (TTL attribute)
 }
 
-// NewUserSession will creates UserSession object.
+// NewUserSession will create UserSession object.
 func NewUserSession(session sessions.Session, ttl int64) (*UserSession, error) {
 	buf := &bytes.Buffer{}
 	err := gob.NewEncoder(buf).Encode(session.Values)

@@ -9,7 +9,7 @@ import (
 	"net/http"
 
 	"github.com/gorilla/sessions"
-	"github.com/kaginawa/kaginawa-server"
+	"github.com/kaginawa/kaginawa-server/internal/kaginawa"
 )
 
 const sessionName = "kaginawa-session"

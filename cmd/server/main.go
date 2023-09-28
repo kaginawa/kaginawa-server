@@ -7,7 +7,7 @@ import (
 	"os"
 
 	"github.com/gorilla/mux"
-	"github.com/kaginawa/kaginawa-server"
+	"github.com/kaginawa/kaginawa-server/internal/kaginawa"
 )
 
 const defaultPort = "8080"

@@ -2,12 +2,12 @@ package main
 
 import (
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 
-	"github.com/kaginawa/kaginawa-server"
+	"github.com/kaginawa/kaginawa-server/internal/kaginawa"
 )
 
 var (
@@ -46,7 +46,7 @@ func TestHandleNodes_ok(t *testing.T) {
 		t.Fatalf("expected status %d, got %d", http.StatusOK, resp.StatusCode)
 	}
 	defer safeClose(resp.Body, "body")
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	if err != nil {
 		t.Fatalf("failed to read body: %v", err)
 	}

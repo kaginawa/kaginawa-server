@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/gorilla/mux"
-	"github.com/kaginawa/kaginawa-server"
+	"github.com/kaginawa/kaginawa-server/internal/kaginawa"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -131,7 +131,7 @@ func handleCommand(w http.ResponseWriter, r *http.Request) {
 	for {
 		resp, err = execWithTimeout(server, report, serverConfig, targetConfig, command, timeout)
 		if err != nil {
-			if err == errEOF {
+			if errors.Is(err, errEOF) {
 				eofCount++
 				if eofCount >= eofRetries {
 					log.Printf("EOF occurred %d times", eofCount)
