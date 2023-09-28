@@ -93,7 +93,7 @@ func TestMatchReports(t *testing.T) {
 	}); err != nil {
 		t.Fatal(err)
 	}
-	res, err := MatchReports(db, 0, database.ListViewAttributes, func(r Report) bool {
+	res, err := database.MatchReports(db, 0, database.ListViewAttributes, func(r Report) bool {
 		return r.CustomID == "test1"
 	})
 	if err != nil {

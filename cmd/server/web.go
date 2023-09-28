@@ -181,7 +181,7 @@ func handleFind(w http.ResponseWriter, r *http.Request) {
 		}
 		handleFindResult(w, r, findBy, findString, reports)
 	case "hostname":
-		matches, err := kaginawa.MatchReports(db, 0, database.ListViewAttributes, func(r kaginawa.Report) bool {
+		matches, err := database.MatchReports(db, 0, database.ListViewAttributes, func(r kaginawa.Report) bool {
 			return r.Hostname == findString
 		})
 		if err != nil {
@@ -190,7 +190,7 @@ func handleFind(w http.ResponseWriter, r *http.Request) {
 		}
 		handleFindResult(w, r, findBy, findString, matches)
 	case "global-addr":
-		matches, err := kaginawa.MatchReports(db, 0, database.ListViewAttributes, func(r kaginawa.Report) bool {
+		matches, err := database.MatchReports(db, 0, database.ListViewAttributes, func(r kaginawa.Report) bool {
 			return r.GlobalIP == findString || r.GlobalHost == findString
 		})
 		if err != nil {
@@ -199,7 +199,7 @@ func handleFind(w http.ResponseWriter, r *http.Request) {
 		}
 		handleFindResult(w, r, findBy, findString, matches)
 	case "local-addr":
-		matches, err := kaginawa.MatchReports(db, 0, database.ListViewAttributes, func(r kaginawa.Report) bool {
+		matches, err := database.MatchReports(db, 0, database.ListViewAttributes, func(r kaginawa.Report) bool {
 			return r.LocalIPv4 == findString || r.LocalIPv6 == findString
 		})
 		if err != nil {
@@ -211,7 +211,7 @@ func handleFind(w http.ResponseWriter, r *http.Request) {
 		if !strings.HasPrefix(findString, "v") {
 			findString = "v" + findString
 		}
-		matches, err := kaginawa.MatchReports(db, 0, database.ListViewAttributes, func(r kaginawa.Report) bool {
+		matches, err := database.MatchReports(db, 0, database.ListViewAttributes, func(r kaginawa.Report) bool {
 			return r.AgentVersion == findString
 		})
 		if err != nil {
@@ -314,7 +314,7 @@ func handleNodesWeb(w http.ResponseWriter, r *http.Request) {
 		if !strings.HasPrefix(version, "v") {
 			version = "v" + version
 		}
-		matches, err := kaginawa.MatchReports(db, minutes, database.ListViewAttributes, func(r kaginawa.Report) bool {
+		matches, err := database.MatchReports(db, minutes, database.ListViewAttributes, func(r kaginawa.Report) bool {
 			if len(customID) > 0 && r.CustomID == customID {
 				return true
 			}

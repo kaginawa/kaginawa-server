@@ -3,8 +3,6 @@ package kaginawa
 import (
 	"fmt"
 	"time"
-
-	"github.com/kaginawa/kaginawa-server/internal/database"
 )
 
 // Report defines all Report attributes
@@ -90,21 +88,6 @@ type USBDevice struct {
 	VendorID  string `json:"vendor_id,omitempty" bson:"vendor_id"`
 	ProductID string `json:"product_id,omitempty" bson:"product_id"`
 	Location  string `json:"location,omitempty" bson:"location"`
-}
-
-// MatchReports generates list of reports filtered by specified matcher function.
-func MatchReports(db database.DB, minutes int, projection database.Projection, matcher func(r Report) bool) ([]Report, error) {
-	reports, err := db.ListReports(0, 0, minutes, projection)
-	if err != nil {
-		return nil, err
-	}
-	var matches []Report
-	for _, report := range reports {
-		if matcher(report) {
-			matches = append(matches, report)
-		}
-	}
-	return matches, nil
 }
 
 // SubReports generates subsets of source reports.

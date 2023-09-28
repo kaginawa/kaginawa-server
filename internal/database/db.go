@@ -92,3 +92,18 @@ type SSHServer struct {
 func (s SSHServer) Addr() string {
 	return fmt.Sprintf("%s:%d", s.Host, s.Port)
 }
+
+// MatchReports generates list of reports filtered by specified matcher function.
+func MatchReports(db DB, minutes int, projection Projection, matcher func(r kaginawa.Report) bool) ([]kaginawa.Report, error) {
+	reports, err := db.ListReports(0, 0, minutes, projection)
+	if err != nil {
+		return nil, err
+	}
+	var matches []kaginawa.Report
+	for _, report := range reports {
+		if matcher(report) {
+			matches = append(matches, report)
+		}
+	}
+	return matches, nil
+}
