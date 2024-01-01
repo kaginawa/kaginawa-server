@@ -4,7 +4,7 @@ go 1.20
 
 require (
 	github.com/aws/aws-sdk-go v1.47.0
-	github.com/gorilla/mux v1.8.0
+	github.com/gorilla/mux v1.8.1
 	github.com/gorilla/securecookie v1.1.1
 	github.com/gorilla/sessions v1.2.1
 	github.com/segmentio/ksuid v1.0.4
