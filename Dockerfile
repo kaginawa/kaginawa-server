@@ -1,11 +1,6 @@
-FROM golang:1-alpine as build_base
+FROM golang:1-alpine AS builder
 RUN apk add git
 WORKDIR /go/src/github.com/kaginawa/kaginawa-server
-COPY go.mod .
-COPY go.sum .
-RUN go mod download
-
-FROM build_base AS builder
 COPY . .
 RUN CGO_ENABLED=0 go install -a -v ./...
 
