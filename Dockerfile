@@ -2,6 +2,7 @@ FROM golang:1-alpine AS builder
 RUN apk add git
 WORKDIR /go/src/github.com/kaginawa/kaginawa-server
 COPY . .
+RUN go mod tidy
 RUN CGO_ENABLED=0 go install -a -v ./...
 
 FROM alpine AS server
