@@ -10,7 +10,7 @@ require (
 	github.com/segmentio/ksuid v1.0.4
 	go.mongodb.org/mongo-driver v1.17.3
 	golang.org/x/crypto v0.37.0
-	golang.org/x/oauth2 v0.27.0
+	golang.org/x/oauth2 v0.29.0
 )
 
 require (
