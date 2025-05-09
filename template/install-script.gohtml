@@ -61,7 +61,8 @@
             </div>
         </div>
     </form>
-    <div class="bg-black text-green-600 overflow-x-scroll mt-4">
+    {{if .CustomID}}
+        <div class="bg-black text-green-600 overflow-x-scroll mt-4">
     <pre class="p-4">#!/bin/sh
 sudo useradd -d /opt/kaginawa -m kaginawa
 wget https://kaginawa.github.io/kaginawa.linux-{{.Arch}}.bz2
@@ -79,6 +80,7 @@ wget https://raw.githubusercontent.com/kaginawa/kaginawa/master/kaginawa.service
 sudo mv kaginawa.service /etc/systemd/system/
 sudo systemctl enable kaginawa
 sudo service kaginawa start</pre>
-    </div>
+        </div>
+    {{end}}
 </div>
 {{template "footer" .Meta}}
