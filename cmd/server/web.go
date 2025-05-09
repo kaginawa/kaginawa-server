@@ -531,6 +531,55 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
+// handleInstallScript handles install script generator.
+//
+// - Method: GET, HEAD or POST
+// - Client: Browser
+// - Access: Admin
+// - Response: HTML
+func handleInstallScript(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead && r.Method != http.MethodPost {
+		http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
+		return
+	}
+	if err := r.ParseForm(); err != nil {
+		log.Printf("failed to parse form: %v", err)
+		http.Error(w, "Invalid form", http.StatusBadRequest)
+		return
+	}
+	if !getSession(r).isLoggedIn() {
+		http.Redirect(w, r, "/login", http.StatusSeeOther)
+		return
+	}
+	keys, err := db.ListAPIKeys()
+	if err != nil {
+		log.Printf("failed to list api keys: %v", err)
+		http.Error(w, "Database unavailable", http.StatusInternalServerError)
+		return
+	}
+	var nonAdminKeys []kaginawa.APIKey
+	for _, v := range keys {
+		if !v.Admin {
+			nonAdminKeys = append(nonAdminKeys, v)
+		}
+	}
+	execTemplate(w, "install-script", struct {
+		Meta     meta
+		Arch     string
+		CustomID string
+		APIKeys  []kaginawa.APIKey
+		APIKey   string
+		Server   string
+	}{
+		newMeta(r, "Install Script Generator"),
+		r.FormValue("arch"),
+		strings.TrimSpace(r.FormValue("cid")),
+		nonAdminKeys,
+		r.FormValue("key"),
+		strings.Split(os.Getenv("SELF_URL"), "//")[1],
+	})
+}
+
 // handleNewAPIKey handles API key creation requests.
 //
 // - Method: POST

@@ -1,0 +1,84 @@
+{{template "header" .Meta}}
+<div class="container mx-auto py-4">
+    <h2 class="text-2xl">Install Script Generator</h2>
+    <p>Only available for Linux with systemd.</p>
+    <form method="post" action="" class="w-full max-w-sm my-2">
+        <div class="md:flex md:items-center mb-3">
+            <div class="md:w-1/3">
+                <label for="select-arch" class="block text-gray-500 font-bold md:text-right mb-1 md:mb-0 pr-4">
+                    Arch
+                </label>
+            </div>
+            <div class="md:w-2/3">
+                <select id="select-arch" name="arch" required
+                        class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500 font-mono">
+                    <option value="x64" {{if eq .Arch "x64"}}selected{{end}}>x64</option>
+                    <option value="armv5" {{if eq .Arch "armv5"}}selected{{end}}>armv5</option>
+                    <option value="armv6" {{if eq .Arch "armv6"}}selected{{end}}>armv6</option>
+                    <option value="armv7" {{if eq .Arch "armv7"}}selected{{end}}>armv7</option>
+                    <option value="armv8" {{if eq .Arch "armv8"}}selected{{end}}>armv8 (arm64)</option>
+                    <option value="riscv64" {{if eq .Arch "riscv64"}}selected{{end}}>riscv64</option>
+                </select>
+            </div>
+        </div>
+        <div class="md:flex md:items-center mb-3">
+            <div class="md:w-1/3">
+                <label for="select-key" class="block text-gray-500 font-bold md:text-right mb-1 md:mb-0 pr-4">
+                    API Key
+                </label>
+            </div>
+            <div class="md:w-2/3">
+                <select id="select-key" name="key" required
+                        class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500 font-mono">
+                    {{$inputKey := .APIKey}}
+                    {{range .APIKeys}}
+                        {{if .Label}}
+                            <option value="{{.Key}}" {{if eq .Key $inputKey}}selected{{end}}>{{.Key}} [{{.Label}}]
+                            </option>
+                        {{else}}
+                            <option value="{{.Key}}" {{if eq .Key $inputKey}}selected{{end}}>{{.Key}}</option>
+                        {{end}}
+                    {{end}}
+                </select>
+            </div>
+        </div>
+        <div class="md:flex md:items-center mb-3">
+            <div class="md:w-1/3">
+                <label for="input-cid" class="block text-gray-500 font-bold md:text-right mb-1 md:mb-0 pr-4">
+                    Custom ID
+                </label>
+            </div>
+            <div class="md:w-2/3">
+                <input type="text" id="input-cid" name="cid" value="{{.CustomID}}" required
+                       class="bg-gray-200 appearance-none border-2 border-gray-200 rounded w-full py-2 px-4 text-gray-700 leading-tight focus:outline-none focus:bg-white focus:border-blue-500"/>
+            </div>
+        </div>
+        <div class="md:flex md:items-center">
+            <div class="md:w-1/3"></div>
+            <div class="md:w-2/3">
+                <input type="submit" value="Generate"
+                       class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded shadow"/>
+            </div>
+        </div>
+    </form>
+    <div class="bg-black text-green-600 overflow-x-scroll mt-4">
+    <pre class="p-4">#!/bin/sh
+sudo useradd -d /opt/kaginawa -m kaginawa
+wget https://kaginawa.github.io/kaginawa.linux-{{.Arch}}.bz2
+bunzip2 kaginawa.linux-{{.Arch}}.bz2
+mv kaginawa.linux-{{.Arch}} kaginawa
+chmod +x kaginawa
+sudo mv kaginawa /opt/kaginawa/
+printf "{\n  \"custom_id\": \"{{.CustomID}}\",\n  \"api_key\": \"{{.APIKey}}\",\n  \"server\": \"{{.Server}}\"\n}\n" > kaginawa.json
+sudo mv kaginawa.json /opt/kaginawa/
+sudo chown kaginawa:kaginawa /opt/kaginawa/*
+echo "kaginawa ALL=(ALL) NOPASSWD: /sbin/reboot, /usr/sbin/service" > 090-kaginawa
+sudo chown root:root 090-kaginawa
+sudo mv 090-kaginawa /etc/sudoers.d/
+wget https://raw.githubusercontent.com/kaginawa/kaginawa/master/kaginawa.service
+sudo mv kaginawa.service /etc/systemd/system/
+sudo systemctl enable kaginawa
+sudo service kaginawa start</pre>
+    </div>
+</div>
+{{template "footer" .Meta}}

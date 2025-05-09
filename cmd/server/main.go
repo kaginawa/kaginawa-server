@@ -84,6 +84,7 @@ func main() {
 	r.HandleFunc("/nodes/{id}/histories", handleHistories)
 	r.HandleFunc("/nodes/{id}/delete", handleNodeDelete)
 	r.HandleFunc("/admin", handleAdmin)
+	r.HandleFunc("/install-script", handleInstallScript)
 	r.HandleFunc("/new-key", handleNewAPIKey)
 	r.HandleFunc("/new-server", handleNewSSHServer)
 	r.HandleFunc("/gen-key", handleGenerateKey)
