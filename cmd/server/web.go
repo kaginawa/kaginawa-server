@@ -533,7 +533,7 @@ func handleAdmin(w http.ResponseWriter, r *http.Request) {
 
 // handleInstallScript handles install script generator.
 //
-// - Method: GET or POST
+// - Method: GET, HEAD or POST
 // - Client: Browser
 // - Access: Admin
 // - Response: HTML
