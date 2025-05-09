@@ -5,7 +5,8 @@
             MemAlloc: {{b_fmt .MemStats.Alloc}} /
             NumGC: {{.MemStats.NumGC}} /
             NumGoroutines: {{.NumGoroutines}} /
-            GoVersion: {{.GoVersion}}
+            GoVersion: {{.GoVersion}} /
+            <span title="Start at {{t_fmt .BootTime "2006/1/2 15:04:05"}}">Uptime: {{t_diff .BootTime}}</span>
         </p>
         <address class="text-gray-600 text-sm">Kaginawa Server</address>
     </div>

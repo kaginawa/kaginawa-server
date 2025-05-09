@@ -25,6 +25,7 @@ const (
 )
 
 var (
+	bootTime  = time.Now().Unix()
 	templates = make(map[string]*template.Template)
 	funcMap   = template.FuncMap{
 		// time format
@@ -54,6 +55,26 @@ var (
 				return fmt.Sprintf("%dB", b)
 			}
 		},
+		// human-readable time diff
+		"t_diff": func(ts int64) string {
+			diff := time.Now().Unix() - ts
+			if diff >= 60*60*24*365 {
+				return fmt.Sprintf("%dy", diff/60*60*24*365)
+			}
+			if diff >= 60*60*24*30 {
+				return fmt.Sprintf("%dm", diff/60*60*24*30)
+			}
+			if diff >= 60*60*24 {
+				return fmt.Sprintf("%dd", diff/60*60*24)
+			}
+			if diff >= 60*60 {
+				return fmt.Sprintf("%dh", diff/60*60)
+			}
+			if diff >= 60 {
+				return fmt.Sprintf("%dm", diff/60)
+			}
+			return fmt.Sprintf("%ds", diff)
+		},
 	}
 )
 
@@ -70,6 +91,7 @@ type meta struct {
 	GoVersion     string
 	NumGoroutines int
 	MemStats      runtime.MemStats
+	BootTime      int64
 }
 
 func newMeta(r *http.Request, title string) meta {
@@ -81,6 +103,7 @@ func newMeta(r *http.Request, title string) meta {
 		GoVersion:     runtime.Version(),
 		NumGoroutines: runtime.NumGoroutine(),
 		MemStats:      mem,
+		BootTime:      bootTime,
 	}
 }
 
