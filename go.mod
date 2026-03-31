@@ -1,6 +1,6 @@
 module github.com/kaginawa/kaginawa-server
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/aws/aws-sdk-go v1.55.7
@@ -10,7 +10,7 @@ require (
 	github.com/segmentio/ksuid v1.0.4
 	go.mongodb.org/mongo-driver v1.17.3
 	golang.org/x/crypto v0.48.0
-	golang.org/x/oauth2 v0.33.0
+	golang.org/x/oauth2 v0.36.0
 )
 
 require (
